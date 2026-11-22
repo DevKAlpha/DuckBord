@@ -34,7 +34,13 @@ function NewBoardForm({ onClose, onCreated }: Omit<NewBoardModalProps, 'open'>) 
   const [mode, setMode] = useState<BoardMode>('personal');
   const [skin, setSkin] = useState<BoardSkin>('default');
   const [error, setError] = useState<string | null>(null);
-  const pickTemplate = setTemplateId;
+  // A template with its own style (content creators: Sencillo) switches the
+  // style picker too, so the form shows the board that will be created.
+  const pickTemplate = (id: string) => {
+    setTemplateId(id);
+    const picked = getTemplate(id);
+    if (picked?.lockedProfile) setProfile(picked.profile);
+  };
 
   const changeProfile = (p: Profile) => {
     setProfile(p);

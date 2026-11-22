@@ -34,6 +34,7 @@ describe('templates', () => {
       'bug-tracker',
       'network',
       'it-support',
+      'content',
       'blank',
     ]);
     expect(templatesFor('simple').map((t) => t.id)).toEqual([
@@ -139,6 +140,15 @@ describe('IT help desk template', () => {
 
 describe('content creators template', () => {
   const board = buildBoardFromTemplate(getTemplate('content')!);
+
+  it('is offered with both styles, but always builds a Sencillo board', () => {
+    expect(templatesFor('technical').some((t) => t.id === 'content')).toBe(true);
+    expect(templatesFor('simple').some((t) => t.id === 'content')).toBe(true);
+    // Never a technical board, even when picked from the Técnico list.
+    expect(buildBoardFromTemplate(getTemplate('content')!, { profile: 'technical' }).profile).toBe(
+      'simple',
+    );
+  });
 
   it('goes from the idea to the published post, with a content brief per card', () => {
     expect(board.profile).toBe('simple');
