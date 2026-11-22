@@ -1,13 +1,14 @@
 import { useNavigate } from 'react-router';
 import { PixelIcon } from '../../design';
 import { useBoardController } from '../../controllers/boardController';
+import { useT } from '../../i18n';
 
 const ALL_BOARDS = '__all__';
 
 /** Same split as the home page: personal and team boards are listed apart. */
 const GROUPS = [
-  { mode: 'personal', label: 'Individuales' },
-  { mode: 'team', label: 'De equipo' },
+  { mode: 'personal', label: 'switcher.personal' },
+  { mode: 'team', label: 'switcher.team' },
 ] as const;
 
 /**
@@ -18,14 +19,15 @@ const GROUPS = [
 export function BoardSwitcher({ currentId }: { currentId: string }) {
   const boards = useBoardController((s) => s.boards);
   const navigate = useNavigate();
+  const t = useT();
 
   return (
     <span className="relative -ml-1.5 inline-flex h-6 w-fit items-center gap-1 rounded-md px-1.5 text-xs text-muted hover:bg-surface-3/70 hover:text-ink">
       <PixelIcon name="board" size={12} />
-      Cambiar tablero
+      {t('switcher.label')}
       <PixelIcon name="chevron" size={12} />
       <select
-        aria-label="Cambiar de tablero"
+        aria-label={t('switcher.aria')}
         className="absolute inset-0 cursor-pointer opacity-0"
         value={currentId}
         onChange={(e) => navigate(e.target.value === ALL_BOARDS ? '/' : `/b/${e.target.value}`)}
@@ -34,7 +36,7 @@ export function BoardSwitcher({ currentId }: { currentId: string }) {
           // Archived boards are not opened: they live on home.
           const list = boards.filter((b) => b.mode === mode && !b.archivedAt);
           return list.length ? (
-            <optgroup key={mode} label={label}>
+            <optgroup key={mode} label={t(label)}>
               {list.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
@@ -43,7 +45,7 @@ export function BoardSwitcher({ currentId }: { currentId: string }) {
             </optgroup>
           ) : null;
         })}
-        <option value={ALL_BOARDS}>Ver todos los tableros…</option>
+        <option value={ALL_BOARDS}>{t('switcher.all')}</option>
       </select>
     </span>
   );

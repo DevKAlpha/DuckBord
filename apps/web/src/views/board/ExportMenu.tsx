@@ -4,9 +4,11 @@ import { Button, PixelIcon } from '../../design';
 import { boardFileName } from '../../models/boardFile';
 import { downloadBoardJson } from './downloadBoard';
 import { downloadBlob, renderBoardPng } from './exportPng';
+import { useT } from '../../i18n';
 
 /** "Exportar" button with a small menu: JSON (re-importable) or PNG (image). */
 export function ExportMenu({ board }: { board: Board }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -53,7 +55,7 @@ export function ExportMenu({ board }: { board: Board }) {
         onClick={() => setOpen((o) => !o)}
       >
         <PixelIcon name="download" />
-        Exportar
+        {t('export.title')}
       </Button>
       {open && (
         <div
@@ -61,10 +63,10 @@ export function ExportMenu({ board }: { board: Board }) {
           className="absolute right-0 z-30 mt-1.5 flex w-52 animate-pixel-pop flex-col rounded-xl border border-line-soft bg-surface p-1 shadow-lift"
         >
           <button role="menuitem" className={item} onClick={exportJson}>
-            <PixelIcon name="text" /> JSON (para importar)
+            <PixelIcon name="text" /> {t('export.json')}
           </button>
           <button role="menuitem" className={item} disabled={busy} onClick={() => void exportPng()}>
-            <PixelIcon name="board" /> {busy ? 'Generando…' : 'Imagen PNG'}
+            <PixelIcon name="board" /> {busy ? t('export.busy') : t('export.png')}
           </button>
         </div>
       )}

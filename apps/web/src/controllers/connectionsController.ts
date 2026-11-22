@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import type { Board } from '@devbord/shared';
 import { getToken, signIn, signOut, type AccountId } from '../integrations/accounts';
 import { moveMessage, postToSlack, readSlack } from '../integrations/slack';
+import { t } from '../i18n';
 
 interface ConnectionsState {
   signedIn: Record<AccountId, boolean>;
@@ -33,7 +34,7 @@ export const useConnections = create<ConnectionsState>((set) => ({
     try {
       await signIn(id);
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : 'No se pudo conectar.' });
+      set({ error: e instanceof Error ? e.message : t('errors.connect') });
     } finally {
       set({ busy: null, signedIn: readSignedIn() });
     }

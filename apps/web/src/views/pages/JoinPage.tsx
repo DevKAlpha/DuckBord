@@ -6,6 +6,7 @@ import { MAX_ACTIVE_BOARDS } from '@devbord/shared';
 import { useCollab } from '../../controllers/collabController';
 import { AppShell } from '../components/AppShell';
 import { NamePrompt } from '../team/NamePrompt';
+import { useT } from '../../i18n';
 
 /** After this long without data, explain that someone must have the board open. */
 const SLOW_AFTER_MS = 15000;
@@ -20,6 +21,7 @@ export function JoinPage() {
   // No room for one more board: joining would bring a board we cannot keep.
   const full = useBoardController((s) => !canAddBoard(s.boards));
   const [slow, setSlow] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     if (arrived || full || !boardId || !key) return;
@@ -37,24 +39,21 @@ export function JoinPage() {
         <PixelIcon name="team" size={48} />
         {full ? (
           <>
-            <h1 className="text-2xl">No caben más tableros</h1>
+            <h1 className="text-2xl">{t('join.fullTitle')}</h1>
             <p className="text-muted" role="status">
-              Tienes {MAX_ACTIVE_BOARDS} tableros activos, el máximo. Archiva o elimina uno y vuelve
-              a abrir el enlace de invitación.
+              {t('join.full', { max: MAX_ACTIVE_BOARDS })}
             </p>
           </>
         ) : (
           <>
-            <h1 className="text-2xl">Uniéndote al tablero…</h1>
+            <h1 className="text-2xl">{t('join.joining')}</h1>
             <p className="text-muted" role="status">
-              {slow
-                ? 'Todavía nadie del equipo tiene el tablero abierto. Déjalo en esta página: entrarás en cuanto alguien lo abra.'
-                : 'Buscando a tu equipo. Tarda unos segundos.'}
+              {slow ? t('join.slow') : t('join.searching')}
             </p>
           </>
         )}
         <Link to="/" className="text-sm text-accent hover:underline">
-          Volver a mis tableros
+          {t('join.back')}
         </Link>
       </main>
       <NamePrompt />

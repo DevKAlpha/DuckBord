@@ -20,6 +20,7 @@ import type {
 } from '@devbord/shared';
 import { boardRepository, type BoardRepository } from '../models/repositories';
 import { announceMove } from './connectionsController';
+import { t } from '../i18n';
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -33,9 +34,7 @@ export const canAddBoard = (boards: Board[]) => activeBoards(boards).length < op
 /** Thrown when adding a board past MAX_ACTIVE_BOARDS. The message is shown as is. */
 export class BoardLimitError extends Error {
   constructor() {
-    super(
-      `Tienes ${ops.MAX_ACTIVE_BOARDS} tableros activos, el máximo. Archiva o elimina uno para añadir otro.`,
-    );
+    super(t('errors.boardLimit', { max: ops.MAX_ACTIVE_BOARDS }));
   }
 }
 
@@ -139,7 +138,7 @@ export function createBoardController(repo: BoardRepository) {
     const persist = (board: Board) =>
       repo.save(board).catch((e: unknown) => {
         console.error('[devbord] Failed to save board', e);
-        set({ error: 'No se pudo guardar. Tus cambios siguen en pantalla.' });
+        set({ error: t('errors.save') });
       });
 
     /** Applies a pure operation to one board, then persists it if it changed. */
@@ -180,7 +179,7 @@ export function createBoardController(repo: BoardRepository) {
           set({ boards: await repo.list(), status: 'ready' });
         } catch (e) {
           console.error('[devbord] Failed to load boards', e);
-          set({ status: 'error', error: 'No se pudieron cargar tus tableros.' });
+          set({ status: 'error', error: t('errors.load') });
         }
       },
 

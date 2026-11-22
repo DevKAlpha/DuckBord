@@ -14,6 +14,7 @@
  * (VITE_GOOGLE_CLIENT_ID, VITE_MS_CLIENT_ID); see docs/integraciones.md.
  */
 import { nextDay, type CalendarEvent } from './calendar';
+import { t } from '../i18n';
 
 export type AccountId = 'google' | 'microsoft';
 
@@ -106,14 +107,11 @@ export function popupSignIn(authUrl: string, state: string): Promise<URLSearchPa
   return new Promise((resolve, reject) => {
     const popup = window.open(authUrl, 'devbord-oauth', 'popup,width=520,height=680');
     if (!popup) {
-      reject(new Error('El navegador bloqueó la ventana de inicio de sesión.'));
+      reject(new Error(t('auth.popupBlocked')));
       return;
     }
     const channel = new BroadcastChannel(CHANNEL);
-    const timer = window.setTimeout(
-      () => finish(new Error('El inicio de sesión tardó demasiado.')),
-      3 * 60_000,
-    );
+    const timer = window.setTimeout(() => finish(new Error(t('auth.timeout'))), 3 * 60_000);
     const finish = (error: Error | null, params?: URLSearchParams) => {
       window.clearTimeout(timer);
       channel.close();
@@ -134,7 +132,7 @@ export function popupSignIn(authUrl: string, state: string): Promise<URLSearchPa
 /** Signs in with the provider's popup and keeps the token for this tab. */
 export async function signIn(id: AccountId): Promise<void> {
   const { clientId, scope } = ACCOUNTS[id];
-  if (!clientId) throw new Error('Esta conexión no está configurada.');
+  if (!clientId) throw new Error(t('auth.notConfigured'));
   const state = randomString(16);
 
   if (id === 'google') {
@@ -182,7 +180,7 @@ export async function signIn(id: AccountId): Promise<void> {
     error_description?: string;
   };
   if (!res.ok || !body.access_token) {
-    throw new Error(body.error_description ?? 'Microsoft no entregó el acceso.');
+    throw new Error(body.error_description ?? t('auth.microsoftNoAccess'));
   }
   saveToken(id, body.access_token, body.expires_in ?? 3600);
 }
@@ -190,7 +188,7 @@ export async function signIn(id: AccountId): Promise<void> {
 /** JSON POST with the account's token. A 401 signs out (the grant was revoked). */
 async function post<T>(id: AccountId, url: string, payload: unknown): Promise<T> {
   const token = getToken(id);
-  if (!token) throw new Error(`Conecta tu cuenta de ${ACCOUNTS[id].name} primero.`);
+  if (!token) throw new Error(t('auth.connectFirst', { name: ACCOUNTS[id].name }));
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -198,9 +196,9 @@ async function post<T>(id: AccountId, url: string, payload: unknown): Promise<T>
   });
   if (res.status === 401) {
     signOut(id);
-    throw new Error('La sesión caducó. Vuelve a conectar la cuenta.');
+    throw new Error(t('auth.expired'));
   }
-  if (!res.ok) throw new Error(`${ACCOUNTS[id].name} respondió ${res.status}.`);
+  if (!res.ok) throw new Error(t('auth.status', { name: ACCOUNTS[id].name, status: res.status }));
   return (await res.json()) as T;
 }
 

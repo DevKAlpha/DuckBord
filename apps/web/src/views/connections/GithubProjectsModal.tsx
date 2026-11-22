@@ -10,10 +10,12 @@ import { useGithub } from '../../controllers/githubController';
 import { MAX_ACTIVE_BOARDS } from '@devbord/shared';
 import { activeBoards, useBoardController } from '../../controllers/boardController';
 import type { GithubProjectSummary } from '../../integrations/github/client';
+import { useT } from '../../i18n';
 
 export function GithubProjectsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   return (
-    <Modal open={open} title="Conectar Project de GitHub" onClose={onClose}>
+    <Modal open={open} title={t('home.connectGithub')} onClose={onClose}>
       {open && <ProjectPicker onClose={onClose} />}
     </Modal>
   );
@@ -22,6 +24,7 @@ export function GithubProjectsModal({ open, onClose }: { open: boolean; onClose:
 function ProjectPicker({ onClose }: { onClose: () => void }) {
   const { configured, user, busy, error } = useGithub();
   const navigate = useNavigate();
+  const t = useT();
   const [list, setList] = useState<{ projects: GithubProjectSummary[]; installUrl: string } | null>(
     null,
   );
@@ -55,30 +58,20 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
   }, [user]);
 
   if (!configured) {
-    return (
-      <p className="text-sm text-muted">
-        Esta instalación de DuckBord no tiene servidor de GitHub configurado. Hace falta desplegar
-        la API con una GitHub App y definir <code>VITE_GITHUB_API_URL</code> (guía en
-        docs/github.md).
-      </p>
-    );
+    return <p className="text-sm text-muted">{t('github.noServer')}</p>;
   }
 
   if (!user) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <p className="text-sm text-muted">
-          Conecta tu cuenta y elige los Projects que quieras traer. Llegan con todo su contenido y
-          quedan conectados: lo que cambies en DuckBord se verá en GitHub y al revés (columnas,
-          issues, estimaciones, sprints, epics y PRs).
-        </p>
+        <p className="text-sm text-muted">{t('github.pickIntro')}</p>
         <Button
           variant="primary"
           disabled={busy}
           onClick={() => void useGithub.getState().signIn()}
         >
           <PixelIcon name="issue" />
-          {busy ? 'Conectando…' : 'Conectar con GitHub'}
+          {busy ? t('common.connecting') : t('github.connect')}
         </Button>
         {error && (
           <p role="alert" className="text-sm text-danger">
@@ -93,9 +86,9 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
     <div className="flex flex-col gap-3">
       <p className="flex items-center gap-2 text-sm text-muted">
         <img src={user.avatarUrl} alt="" className="size-5 rounded-sm" />
-        Conectado como <strong className="text-ink">{user.login}</strong>
+        {t('github.signedInAs')} <strong className="text-ink">{user.login}</strong>
       </p>
-      {loading && <p className="text-sm text-faint">Buscando tus Projects…</p>}
+      {loading && <p className="text-sm text-faint">{t('github.searching')}</p>}
       {listError && (
         <p role="alert" className="text-sm text-danger">
           {listError}
@@ -103,16 +96,13 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
       )}
       {list && list.projects.length === 0 && (
         <p className="rounded-xl border border-dashed border-line p-4 text-sm text-muted">
-          No hay Projects visibles. Instala la App de DuckBord en tu organización o repositorio y
-          vuelve a abrir esta ventana.
+          {t('github.none')}
         </p>
       )}
       {list && list.projects.length > 0 && (
         <>
           <div className="flex items-center justify-between text-xs text-muted">
-            <span>
-              {selected.size} de {list.projects.length} seleccionados
-            </span>
+            <span>{t('github.selected', { n: selected.size, total: list.projects.length })}</span>
             <button
               type="button"
               className="underline hover:text-ink"
@@ -127,14 +117,16 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
                 );
               }}
             >
-              {selected.size === list.projects.length ? 'Quitar todos' : 'Seleccionar todos'}
+              {selected.size === list.projects.length
+                ? t('github.clearAll')
+                : t('github.selectAll')}
             </button>
           </div>
           {newPicked >= room && (
             <p className="text-xs text-muted">
               {room > 0
-                ? `Caben ${room} tableros nuevos (máximo ${MAX_ACTIVE_BOARDS} activos).`
-                : `Tienes ${MAX_ACTIVE_BOARDS} tableros activos. Archiva o elimina uno para traer otro Project.`}
+                ? t('github.room', { n: room, max: MAX_ACTIVE_BOARDS })
+                : t('github.full', { max: MAX_ACTIVE_BOARDS })}
             </p>
           )}
           <ul className="flex flex-col gap-1.5">
@@ -159,7 +151,7 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
                     />
                     <span className="min-w-0 flex-1 truncate font-semibold">{p.title}</span>
                     {linked.has(p.id) && (
-                      <span className="shrink-0 text-xs text-accent">Ya en DuckBord</span>
+                      <span className="shrink-0 text-xs text-accent">{t('github.already')}</span>
                     )}
                     <span className="shrink-0 text-xs text-faint">
                       {p.owner} · #{p.number}
@@ -172,10 +164,10 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
           <div className="flex items-center justify-end gap-2">
             {progress && (
               <span className="mr-auto text-xs text-muted" aria-live="polite">
-                Trayendo {progress.done} de {progress.total}…
+                {t('github.bringing', { n: progress.done, total: progress.total })}
               </span>
             )}
-            <Button onClick={onClose}>Cancelar</Button>
+            <Button onClick={onClose}>{t('common.cancel')}</Button>
             <Button
               variant="primary"
               disabled={selected.size === 0 || progress !== null}
@@ -200,7 +192,9 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
               }}
             >
               <PixelIcon name="import" />
-              {selected.size > 1 ? `Traer ${selected.size} Projects` : 'Traer Project'}
+              {selected.size > 1
+                ? t('github.bringMany', { n: selected.size })
+                : t('github.bringOne')}
             </Button>
           </div>
         </>
@@ -212,7 +206,7 @@ function ProjectPicker({ onClose }: { onClose: () => void }) {
           rel="noopener noreferrer"
           className="text-xs text-muted underline"
         >
-          ¿Falta un Project? Instala la App en otra organización o repositorio
+          {t('github.install')}
         </a>
       )}
     </div>

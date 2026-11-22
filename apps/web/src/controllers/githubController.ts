@@ -20,6 +20,7 @@ import {
   type GithubProjectSummary,
 } from '../integrations/github/client';
 import { setGithubSink, useBoardController } from './boardController';
+import { t } from '../i18n';
 
 /** live: in sync and listening; syncing: writing to GitHub; offline: stream down. */
 export type SyncState = 'off' | 'live' | 'syncing' | 'offline' | 'error';
@@ -51,7 +52,7 @@ const boards = () => useBoardController.getState().boards;
 const boardById = (id: string) => boards().find((b) => b.id === id);
 
 const message = (e: unknown) =>
-  e instanceof GithubApiError || e instanceof Error ? e.message : 'Error con GitHub.';
+  e instanceof GithubApiError || e instanceof Error ? e.message : t('github.error');
 
 /** Ops waiting or running per board; snapshots only land when it reaches 0. */
 const pending = new Map<string, number>();

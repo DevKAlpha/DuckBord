@@ -7,15 +7,16 @@ import type { Board, Card } from '@devbord/shared';
 import { Select, cx } from '../../design';
 import { useGithub } from '../../controllers/githubController';
 import { prLabel } from './prLabel';
+import { useT } from '../../i18n';
 
 export function GithubCardPanel({ board, card }: { board: Board; card: Card }) {
   const gh = card.github;
   const link = board.github!;
+  const t = useT();
   if (!gh) {
     return (
       <p className="rounded-lg border border-dashed border-line p-2.5 text-xs text-muted">
-        Borrador del Project: aún no es un issue. Conviértelo en issue desde GitHub para asignarlo o
-        meterlo en una epic.
+        {t('github.draft')}
       </p>
     );
   }
@@ -32,14 +33,16 @@ export function GithubCardPanel({ board, card }: { board: Board; card: Card }) {
       <header className="flex items-center justify-between gap-2">
         <span className="font-pixel">GitHub</span>
         <a href={gh.url} target="_blank" rel="noopener noreferrer" className="text-xs underline">
-          {gh.repo}#{gh.number} · {gh.state === 'open' ? 'abierto' : 'cerrado'}
+          {gh.repo}#{gh.number} · {gh.state === 'open' ? t('github.open') : t('github.closed')}
         </a>
       </header>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold tracking-wide text-muted uppercase">Asignados</span>
+        <span className="text-xs font-semibold tracking-wide text-muted uppercase">
+          {t('github.assignees')}
+        </span>
         {people.length === 0 ? (
-          <span className="text-xs text-faint">Nadie puede ser asignado en {gh.repo}.</span>
+          <span className="text-xs text-faint">{t('github.noAssignable', { repo: gh.repo })}</span>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {people.map((u) => {
@@ -79,10 +82,10 @@ export function GithubCardPanel({ board, card }: { board: Board; card: Card }) {
           value={parentCard?.id ?? (gh.parent ? 'other' : '')}
           onChange={(e) => useGithub.getState().setEpic(board.id, card.id, e.target.value || null)}
         >
-          <option value="">Sin epic</option>
+          <option value="">{t('github.noEpic')}</option>
           {gh.parent && !parentCard && (
             <option value="other" disabled>
-              #{gh.parent.number} {gh.parent.title} (fuera del tablero)
+              #{gh.parent.number} {gh.parent.title} {t('github.outside')}
             </option>
           )}
           {epics.map((x) => (
@@ -95,7 +98,7 @@ export function GithubCardPanel({ board, card }: { board: Board; card: Card }) {
 
       {gh.subIssues && (
         <p className="text-xs text-muted">
-          Es una epic: {gh.subIssues.completed} de {gh.subIssues.total} sub-issues cerrados.
+          {t('github.isEpic', { done: gh.subIssues.completed, total: gh.subIssues.total })}
         </p>
       )}
 

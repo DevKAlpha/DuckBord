@@ -17,6 +17,7 @@ import { ColumnSprite, Snowfall, StatusRing } from './ColumnDecor';
 import { columnKind } from './columnKind';
 import { Composer } from './Composer';
 import { InlineEdit } from './InlineEdit';
+import { useT } from '../../i18n';
 
 export interface ColumnViewProps {
   column: Column;
@@ -56,6 +57,7 @@ function WipChip({
 }) {
   const over = isOverWip(column);
   const count = column.cards.length;
+  const t = useT();
   return (
     <span
       className={cx(
@@ -66,12 +68,12 @@ function WipChip({
     >
       {column.wipLimit === null ? count : `${count}/${column.wipLimit}`}
       <select
-        aria-label={`Límite WIP de ${column.title}${over ? ' (superado)' : ''}`}
+        aria-label={t(over ? 'column.wipOver' : 'column.wip', { name: column.title })}
         className="absolute inset-0 cursor-pointer opacity-0"
         value={column.wipLimit ?? ''}
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
       >
-        <option value="">Sin límite WIP</option>
+        <option value="">{t('column.noWip')}</option>
         {WIP_OPTIONS.map((n) => (
           <option key={n} value={n}>
             WIP {n}
@@ -118,6 +120,7 @@ export const ColumnView = memo(function ColumnView({
   const points = column.cards.reduce((sum, c) => sum + (c.storyPoints ?? 0), 0);
   const overWip = isOverWip(column);
   const kind = columnKind(column.title, isLastColumn);
+  const t = useT();
 
   // Shake once when the column crosses its WIP limit (not on every render).
   const headerRef = useRef<HTMLElement>(null);
@@ -138,13 +141,13 @@ export const ColumnView = memo(function ColumnView({
     <section
       ref={setNodeRef}
       data-flip-id={`col:${column.id}`}
-      aria-label={`Columna ${column.title}`}
+      aria-label={t('column.aria', { name: column.title })}
       // Over the WIP limit the frame turns red (frames.css).
       data-over-wip={overWip || undefined}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cx(
         // *:relative keeps the content above decorative layers (icebox snowfall).
-        'kb-col group/col relative flex max-h-full w-[min(320px,85vw)] shrink-0 snap-start flex-col gap-3 pixel-box bg-surface-2 p-[7px] *:relative',
+        'kb-col group/col pixel-box relative flex max-h-full w-[min(320px,85vw)] shrink-0 snap-start flex-col gap-3 bg-surface-2 p-[7px] *:relative',
         isDragging && 'opacity-50',
       )}
     >
@@ -157,7 +160,7 @@ export const ColumnView = memo(function ColumnView({
               ref={setActivatorNodeRef}
               {...attributes}
               {...listeners}
-              aria-label={`Mover columna ${column.title}`}
+              aria-label={t('column.move', { name: column.title })}
               className="-ml-1 cursor-grab rounded-md p-0.5 text-faint hover:text-ink"
             >
               <PixelIcon name="grip" size={12} />
@@ -167,14 +170,14 @@ export const ColumnView = memo(function ColumnView({
           {locked ? (
             <span
               className="min-w-0 truncate font-pixel text-base"
-              data-cursor-hint="Opción del campo Status: se edita en GitHub"
+              data-cursor-hint={t('column.githubStatus')}
             >
               {column.title}
             </span>
           ) : (
             <InlineEdit
               value={column.title}
-              label="Nombre de la columna"
+              label={t('column.name')}
               maxLength={60}
               onSave={(title) => onRename(column.id, title)}
               className="min-w-0 font-pixel text-base"
@@ -191,9 +194,9 @@ export const ColumnView = memo(function ColumnView({
           {features.agile && (
             <span
               className="shrink-0 rounded-full border border-line px-1.5 py-px text-[10px] text-muted tabular-nums"
-              title="Estimación total de la columna (story points)"
+              title={t('column.estimateTitle')}
             >
-              Est. {points}
+              {t('column.estimate', { n: points })}
             </span>
           )}
           <span className="flex-1" />
@@ -204,12 +207,12 @@ export const ColumnView = memo(function ColumnView({
               // Quiet until the column is hovered or focused: less noise, same reach.
               // Hidden (no space taken) until the column is hovered or has focus inside.
               className="hidden! group-focus-within/col:inline-flex! group-hover/col:inline-flex!"
-              label={`Eliminar columna ${column.title}`}
+              label={t('column.delete', { name: column.title })}
               onClick={() => {
                 const msg = column.cards.length
-                  ? `¿Eliminar "${column.title}" y sus ${column.cards.length} tarjetas?`
-                  : `¿Eliminar "${column.title}"?`;
-                void confirm(msg, { confirmLabel: 'Eliminar', danger: true }).then(
+                  ? t.n('column.deleteWithCards', column.cards.length, { name: column.title })
+                  : t('column.deleteConfirm', { name: column.title });
+                void confirm(msg, { confirmLabel: t('common.delete'), danger: true }).then(
                   (ok) => ok && onRemove(column.id),
                 );
               }}
@@ -218,8 +221,8 @@ export const ColumnView = memo(function ColumnView({
         </div>
         <InlineEdit
           value={column.description ?? ''}
-          placeholder="Añadir descripción"
-          label="Descripción de la columna"
+          placeholder={t('column.addDescription')}
+          label={t('column.description')}
           maxLength={140}
           onSave={(text) => onDescribe(column.id, text)}
           className={cx(
@@ -252,9 +255,9 @@ export const ColumnView = memo(function ColumnView({
       </SortableContext>
 
       <Composer
-        triggerLabel="Añadir tarjeta"
-        placeholder="¿Qué hay que hacer?"
-        submitLabel="Añadir"
+        triggerLabel={t('column.addCard')}
+        placeholder={t('column.cardPlaceholder')}
+        submitLabel={t('common.add')}
         onSubmit={(title) => onAddCard(column.id, title)}
       />
     </section>

@@ -10,6 +10,8 @@
  * the notice, so a channel never gets it twice.
  */
 
+import { t } from '../i18n';
+
 export interface SlackConfig {
   webhook: string;
   /** "all": every change of column. "done": only when a card reaches the last column. */
@@ -66,7 +68,7 @@ export function moveMessage(input: {
     .slice(0, LISTED)
     .map((c) => `${c.number !== null ? `#${c.number} ` : ''}${esc(c.title)}`);
   const more = input.cards.length - LISTED;
-  const list = names.join(', ') + (more > 0 ? ` y ${more} más` : '');
-  const verb = input.cards.length === 1 ? 'pasó' : 'pasaron';
-  return `${input.done ? ':white_check_mark: ' : ''}*${esc(input.boardName)}* · ${list} ${verb} a *${esc(input.to)}*`;
+  const list = names.join(', ') + (more > 0 ? t('slack.more', { n: more }) : '');
+  const moved = t.n('slack.moved', input.cards.length, { list, to: esc(input.to) });
+  return `${input.done ? ':white_check_mark: ' : ''}*${esc(input.boardName)}* · ${moved}`;
 }

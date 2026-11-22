@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { IconButton } from './IconButton';
 import { PixelScroll } from './PixelScroll';
 import { holdLoops } from '../motion';
+import { useT } from '../../i18n';
 
 export interface ModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ export interface ModalProps {
  * app's own scrollbar and the pixel cursor never turns into the system one.
  */
 export function Modal({ open, title, onClose, children, size = 'md' }: ModalProps) {
+  const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export function Modal({ open, title, onClose, children, size = 'md' }: ModalProp
               <div className="flex flex-col gap-4">
                 <header className="flex items-start justify-between gap-4">
                   <h2 className="text-xl">{title}</h2>
-                  <IconButton icon="close" label="Cerrar" onClick={onClose} />
+                  <IconButton icon="close" label={t('common.close')} onClick={onClose} />
                 </header>
                 {children}
               </div>

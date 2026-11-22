@@ -9,6 +9,7 @@ import { MoodDecor } from './MoodDecor';
 import './frames.css';
 import { GithubMeta, GithubRef } from '../connections/GithubCardChips';
 import { useIsSelected } from '../../controllers/selectionController';
+import { useT } from '../../i18n';
 
 export interface CardViewProps {
   card: Card;
@@ -43,6 +44,7 @@ export const CardFace = memo(function CardFace({
   overlay,
   mood = null,
 }: Omit<CardViewProps, 'onOpen' | 'onSelect' | 'moodLabel'>) {
+  const t = useT();
   const cardLabels = labels.filter((l) => card.labelIds.includes(l.id));
   const due = card.dueDate ? describeDueDate(card.dueDate) : null;
   const showType = features.cardTypes && card.type !== 'task';
@@ -99,17 +101,19 @@ export const CardFace = memo(function CardFace({
             // Pixel "die" with the estimate, the usual place for points in Scrum boards.
             <span
               className="grid h-5 min-w-5 place-items-center rounded-md border border-line px-1 text-[11px] font-semibold text-ink tabular-nums"
-              title={`${card.storyPoints} story points`}
+              title={t('card.points', { n: card.storyPoints ?? 0 })}
             >
               {card.storyPoints}
             </span>
           )}
           {showType && (
-            <Badge color={CARD_TYPE_META[card.type].color}>{CARD_TYPE_META[card.type].label}</Badge>
+            <Badge color={CARD_TYPE_META[card.type].color}>
+              {t(CARD_TYPE_META[card.type].label)}
+            </Badge>
           )}
           {showPriority && card.priority && (
             <Badge color={PRIORITY_META[card.priority].color}>
-              {PRIORITY_META[card.priority].label}
+              {t(PRIORITY_META[card.priority].label)}
             </Badge>
           )}
           {showSprint && (
@@ -122,7 +126,7 @@ export const CardFace = memo(function CardFace({
           {showLinks && (
             <span
               className="inline-flex items-center gap-1 text-muted tabular-nums"
-              aria-label={`${card.links.length} archivos o enlaces`}
+              aria-label={t.n('card.links', card.links.length)}
             >
               <PixelIcon name="link" size={12} />
               {card.links.length}
@@ -159,6 +163,7 @@ export const CardView = memo(function CardView({
   moodLabel = null,
 }: CardViewProps) {
   const selected = useIsSelected(card.id);
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: 'card' },
@@ -184,7 +189,7 @@ export const CardView = memo(function CardView({
       <div
         {...attributes}
         {...listeners}
-        aria-roledescription="tarjeta"
+        aria-roledescription={t('card.role')}
         aria-label={moodLabel ? `${card.title}. ${moodLabel}` : card.title}
         aria-selected={selected}
         // Shown by the pixel cursor as a pixel tooltip (native titles use the system font).
@@ -213,9 +218,7 @@ export const CardView = memo(function CardView({
         <div ref={faceRef} className={cx(isDragging && 'invisible')}>
           <CardFace card={card} labels={labels} features={features} mood={mood} />
         </div>
-        {isDragging && (
-          <div aria-hidden className="kb-card-gap" />
-        )}
+        {isDragging && <div aria-hidden className="kb-card-gap" />}
       </div>
     </li>
   );

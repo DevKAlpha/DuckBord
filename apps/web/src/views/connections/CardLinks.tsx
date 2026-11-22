@@ -8,6 +8,7 @@ import { CARD_LINKS_SIZE, CardLinkSchema, type CardLink } from '@devbord/shared'
 import { Button, IconButton, Input } from '../../design';
 import { describeLink } from '../../integrations/links';
 import { ProviderMark } from './ProviderMark';
+import { useT } from '../../i18n';
 
 export function CardLinks({
   links,
@@ -19,6 +20,7 @@ export function CardLinks({
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
   const full = links.length >= CARD_LINKS_SIZE;
 
   const add = () => {
@@ -28,8 +30,8 @@ export function CardLinks({
       url: clean,
       title: (title.trim() || describeLink(clean).service).slice(0, 200),
     });
-    if (!link.success) return setError('Pega un enlace completo, que empiece por https://');
-    if (links.some((l) => l.url === link.data.url)) return setError('Ese enlace ya está adjunto.');
+    if (!link.success) return setError(t('links.invalid'));
+    if (links.some((l) => l.url === link.data.url)) return setError(t('links.duplicate'));
     onChange([...links, link.data]);
     setUrl('');
     setTitle('');
@@ -46,7 +48,7 @@ export function CardLinks({
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
-        Archivos y enlaces
+        {t('links.title')}
       </legend>
       {links.length > 0 && (
         <ul className="flex flex-col gap-1.5">
@@ -72,7 +74,7 @@ export function CardLinks({
                 )}
                 <IconButton
                   icon="close"
-                  label={`Quitar ${l.title}`}
+                  label={t('links.remove', { name: l.title })}
                   onClick={() => onChange(links.filter((x) => x.url !== l.url))}
                 />
               </li>
@@ -83,11 +85,11 @@ export function CardLinks({
       {!full && (
         <div className="flex flex-wrap gap-2">
           <Input
-            aria-label="Enlace"
+            aria-label={t('links.generic')}
             type="url"
             inputMode="url"
             spellCheck={false}
-            placeholder="Pega un enlace de Drive, OneDrive, Slack…"
+            placeholder={t('links.placeholder')}
             className="min-w-48 flex-[2]"
             value={url}
             onChange={(e) => {
@@ -97,8 +99,8 @@ export function CardLinks({
             onKeyDown={onEnter}
           />
           <Input
-            aria-label="Nombre (opcional)"
-            placeholder="Nombre (opcional)"
+            aria-label={t('links.name')}
+            placeholder={t('links.name')}
             maxLength={200}
             className="min-w-32 flex-1"
             value={title}
@@ -106,7 +108,7 @@ export function CardLinks({
             onKeyDown={onEnter}
           />
           <Button onClick={add} disabled={!url.trim()}>
-            Adjuntar
+            {t('links.attach')}
           </Button>
         </div>
       )}

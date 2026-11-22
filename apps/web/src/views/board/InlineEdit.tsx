@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cx } from '../../design';
+import { useT } from '../../i18n';
 
 export interface InlineEditProps {
   value: string;
@@ -25,6 +26,7 @@ export function InlineEdit({
   placeholder,
 }: InlineEditProps) {
   const [editing, setEditing] = useState(false);
+  const t = useT();
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,7 +45,7 @@ export function InlineEdit({
     return (
       <button
         type="button"
-        aria-label={`${label}: ${value || placeholder || 'vacío'}. Pulsa para editar`}
+        aria-label={t('inline.edit', { label, value: value || placeholder || t('inline.empty') })}
         onClick={() => {
           setDraft(value);
           setEditing(true);

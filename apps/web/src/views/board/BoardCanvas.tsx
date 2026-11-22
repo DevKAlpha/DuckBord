@@ -53,6 +53,7 @@ import { CardFace } from './CardView';
 import { ColumnView } from './ColumnView';
 import { Composer } from './Composer';
 import { SelectionBar } from './SelectionBar';
+import { useT } from '../../i18n';
 
 type DragKind = 'card' | 'column';
 const kindOf = (data: { current?: Record<string, unknown> } | undefined): DragKind | undefined =>
@@ -134,6 +135,7 @@ const intersects = (a: DOMRect, b: { left: number; top: number; right: number; b
   a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 
 export function BoardCanvas({ board, team = false }: { board: Board; team?: boolean }) {
+  const t = useT();
   const [draft, setDraft] = useState<Board | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   /** Cards moved together with the dragged one (multi-select), in board order. */
@@ -389,8 +391,7 @@ export function BoardCanvas({ board, team = false }: { board: Board; team?: bool
         onDragCancel={reset}
         accessibility={{
           screenReaderInstructions: {
-            draggable:
-              'Pulsa Espacio para levantar. Usa las flechas para mover y Espacio para soltar. Escape cancela.',
+            draggable: t('canvas.dragHelp'),
           },
         }}
       >
@@ -450,13 +451,13 @@ export function BoardCanvas({ board, team = false }: { board: Board; team?: bool
                 rel="noopener noreferrer"
                 className="block rounded-xl border border-dashed border-line p-3 text-sm text-muted hover:text-ink"
               >
-                Las columnas son el campo Status del Project. Añádelas o renómbralas en GitHub.
+                {t('canvas.githubColumns')}
               </a>
             ) : (
               <Composer
-                triggerLabel="Añadir columna"
-                placeholder="Nombre de la columna"
-                submitLabel="Crear columna"
+                triggerLabel={t('canvas.addColumn')}
+                placeholder={t('column.name')}
+                submitLabel={t('canvas.createColumn')}
                 onSubmit={(title) => ctrl().addColumn(board.id, title)}
               />
             )}
