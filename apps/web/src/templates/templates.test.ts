@@ -34,6 +34,7 @@ describe('templates', () => {
       'bug-tracker',
       'network',
       'it-support',
+      'content',
       'blank',
     ]);
     expect(templatesFor('simple').map((t) => t.id)).toEqual([
@@ -139,6 +140,14 @@ describe('IT help desk template', () => {
 
 describe('content creators template', () => {
   const board = buildBoardFromTemplate(getTemplate('content')!);
+
+  it('is offered with both styles, and the board keeps the picked one', () => {
+    expect(templatesFor('technical').some((t) => t.id === 'content')).toBe(true);
+    expect(templatesFor('simple').some((t) => t.id === 'content')).toBe(true);
+    expect(buildBoardFromTemplate(getTemplate('content')!, { profile: 'technical' }).profile).toBe(
+      'technical',
+    );
+  });
 
   it('goes from the idea to the published post, with a content brief per card', () => {
     expect(board.profile).toBe('simple');
