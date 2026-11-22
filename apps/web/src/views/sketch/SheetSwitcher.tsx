@@ -10,6 +10,7 @@
 import { useSketch, useSketchSheets } from '../../controllers/sketchController';
 import { IconButton, PixelIcon, confirm } from '../../design';
 import { InlineEdit } from '../board/InlineEdit';
+import { useT } from '../../i18n';
 
 const NEW_SHEET = '__new__';
 
@@ -17,15 +18,16 @@ export function SheetSwitcher({ team }: { team: boolean }) {
   const sheets = useSketchSheets();
   const sheetId = useSketch((s) => s.sheetId);
   const current = sheets.find((s) => s.id === sheetId);
+  const t = useT();
 
   if (team) {
     return (
       <span
         className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md bg-surface-3 px-1.5 text-xs text-muted"
-        title="En los tableros de equipo todos dibujan en la misma pizarra"
+        title={t('sketch.sheet.sharedHint')}
       >
         <PixelIcon name="team" size={12} />
-        Pizarra compartida
+        {t('sketch.sheet.shared')}
       </span>
     );
   }
@@ -38,7 +40,7 @@ export function SheetSwitcher({ team }: { team: boolean }) {
     <div className="flex min-w-0 items-center gap-1">
       <InlineEdit
         value={current.name}
-        label="Nombre de la pizarra"
+        label={t('sketch.sheet.name')}
         maxLength={40}
         onSave={(name) => renameSheet(current.id, name)}
         className="min-w-0 truncate text-sm"
@@ -47,7 +49,7 @@ export function SheetSwitcher({ team }: { team: boolean }) {
         {index + 1}/{sheets.length}
         <PixelIcon name="chevron" size={12} />
         <select
-          aria-label="Cambiar de pizarra"
+          aria-label={t('sketch.sheet.switch')}
           className="absolute inset-0 cursor-pointer opacity-0"
           value={current.id}
           onChange={(e) =>
@@ -59,22 +61,19 @@ export function SheetSwitcher({ team }: { team: boolean }) {
               {s.name}
             </option>
           ))}
-          <option value={NEW_SHEET}>+ Nueva pizarra</option>
+          <option value={NEW_SHEET}>+ {t('sketch.sheet.new')}</option>
         </select>
       </span>
-      <IconButton icon="plus" label="Nueva pizarra" onClick={addSheet} />
+      <IconButton icon="plus" label={t('sketch.sheet.new')} onClick={addSheet} />
       {sheets.length > 1 && (
         <IconButton
           icon="trash"
-          label="Eliminar esta pizarra"
+          label={t('sketch.sheet.delete')}
           onClick={async () => {
-            const ok = await confirm(
-              `¿Eliminar la pizarra "${current.name}" y todo lo que tiene?`,
-              {
-                confirmLabel: 'Eliminar',
-                danger: true,
-              },
-            );
+            const ok = await confirm(t('sketch.sheet.deleteConfirm', { name: current.name }), {
+              confirmLabel: t('common.delete'),
+              danger: true,
+            });
             if (ok) removeSheet(current.id);
           }}
         />

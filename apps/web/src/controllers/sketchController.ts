@@ -20,8 +20,12 @@ import type { SketchBook } from '../models/sketch/SketchBook';
 import type { SketchModel, SketchSnapshot } from '../models/sketch/SketchModel';
 import {
   MAIN_SHEET,
+  type FillStyle,
+  type IconId,
   type InkColor,
+  type LineStyle,
   type NoteColor,
+  type Roughness,
   type SheetInfo,
   type StrokeTool,
 } from '../models/sketch/types';
@@ -31,13 +35,18 @@ export * from '../models/sketch/types';
 export type { SketchModel } from '../models/sketch/SketchModel';
 
 /**
- * Everything the toolbar can pick: drawing tools plus note, text, eraser and
- * the laser pointer (points at things without leaving ink).
+ * Everything the toolbar can pick: select (move, resize, restyle what is
+ * drawn), drawing tools, plus note, text, eraser and the laser pointer
+ * (points at things without leaving ink).
  */
-export type SketchTool = StrokeTool | 'note' | 'text' | 'eraser' | 'laser';
+export type SketchTool = 'select' | StrokeTool | 'note' | 'text' | 'eraser' | 'laser';
 
 /** Width presets per size step (sheet units). The marker paints 3× wider. */
 export const SIZE_STEPS = [3, 6, 12] as const;
+/** Size of an icon placed with a click, per size step (sheet units). */
+export const ICON_SIZES = [56, 88, 128] as const;
+/** Diameter of a numbered step, per size step (sheet units). */
+export const STEP_SIZES = [40, 56, 80] as const;
 
 const loadSketch = () => import('../models/sketch');
 type SketchModule = Awaited<ReturnType<typeof loadSketch>>;
@@ -72,6 +81,12 @@ interface SketchState {
   color: InkColor;
   sizeStep: 0 | 1 | 2;
   noteColor: NoteColor;
+  fill: FillStyle;
+  dash: LineStyle;
+  rough: Roughness;
+  icon: IconId;
+  /** Ids of the selected strokes (select tool). */
+  selection: readonly string[];
 
   show: (boardId: string, team: boolean) => void;
   hide: () => void;
@@ -87,6 +102,11 @@ interface SketchState {
   setColor: (color: InkColor) => void;
   setSizeStep: (step: 0 | 1 | 2) => void;
   setNoteColor: (color: NoteColor) => void;
+  setFill: (fill: FillStyle) => void;
+  setDash: (dash: LineStyle) => void;
+  setRough: (rough: Roughness) => void;
+  setIcon: (icon: IconId) => void;
+  setSelection: (ids: readonly string[]) => void;
   /** Deletes the stored whiteboards of a personal board. */
   forget: (boardId: string) => Promise<void>;
 }
@@ -103,7 +123,13 @@ export const useSketch = create<SketchState>((set, get) => {
     generation++;
     release?.();
     release = null;
-    set({ model: null, book: null, sheetId: MAIN_SHEET });
+    set({ model: null, book: null, sheetId: MAIN_SHEET, selection: [] });
+  };
+
+  /** Applies a style to the selected strokes (one undo step), if any. */
+  const restyle = (style: Parameters<SketchModel['restyleStrokes']>[1]) => {
+    const { model, selection } = get();
+    if (model && selection.length) model.restyleStrokes(new Set(selection), style);
   };
 
   /** Swaps the model to another whiteboard of the same personal document. */
@@ -114,7 +140,7 @@ export const useSketch = create<SketchState>((set, get) => {
     const current = get().model;
     if (current && current.sheetId === target && current.doc === book.doc) return;
     current?.destroy();
-    set({ sheetId: target, model: sketchModule.sketchOnDoc(book.doc, target) });
+    set({ sheetId: target, model: sketchModule.sketchOnDoc(book.doc, target), selection: [] });
     const boardId = get().boardId;
     if (boardId) writeLastSheet(boardId, target);
   };
@@ -172,6 +198,11 @@ export const useSketch = create<SketchState>((set, get) => {
     color: 'ink',
     sizeStep: 1,
     noteColor: 'yellow',
+    fill: 'none',
+    dash: 'solid',
+    rough: 1,
+    icon: 'duck',
+    selection: [],
 
     show: (boardId, team) => {
       if (get().open && get().boardId === boardId) return;
@@ -203,12 +234,34 @@ export const useSketch = create<SketchState>((set, get) => {
 
     removeSheet: (sheetId) => get().book?.remove(sheetId),
 
-    setTool: (tool) => set({ tool }),
-    // Picking a color while erasing or pointing means "I want to draw again".
-    setColor: (color) =>
-      set({ color, tool: get().tool === 'eraser' || get().tool === 'laser' ? 'pen' : get().tool }),
-    setSizeStep: (sizeStep) => set({ sizeStep }),
+    // Leaving the select tool drops the selection.
+    setTool: (tool) => set(tool === 'select' ? { tool } : { tool, selection: [] }),
+    // With a selection, the style changes what is selected (like Excalidraw);
+    // the choice also becomes the default for what is drawn next. Picking a
+    // color while erasing or pointing means "I want to draw again".
+    setColor: (color) => {
+      restyle({ color });
+      set({ color, tool: get().tool === 'eraser' || get().tool === 'laser' ? 'pen' : get().tool });
+    },
+    setSizeStep: (sizeStep) => {
+      restyle({ size: SIZE_STEPS[sizeStep] });
+      set({ sizeStep });
+    },
     setNoteColor: (noteColor) => set({ noteColor }),
+    setFill: (fill) => {
+      restyle({ fill });
+      set({ fill });
+    },
+    setDash: (dash) => {
+      restyle({ dash });
+      set({ dash });
+    },
+    setRough: (rough) => {
+      restyle({ rough });
+      set({ rough });
+    },
+    setIcon: (icon) => set({ icon, tool: 'icon', selection: [] }),
+    setSelection: (selection) => set({ selection }),
 
     forget: async (boardId) => {
       if (get().boardId === boardId) get().hide();

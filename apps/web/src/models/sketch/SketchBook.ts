@@ -12,6 +12,7 @@
 import type * as Y from 'yjs';
 import { rootName } from './SketchModel';
 import { MAIN_SHEET, SHEET_NAME_MAX, type SheetInfo } from './types';
+import { t } from '../../i18n';
 
 /** Book edits are not drawing: they stay out of every sheet's undo history. */
 const ORIGIN = 'sketch-book';
@@ -31,7 +32,11 @@ export class SketchBook {
     // A board that never had a list starts with its first (possibly existing) whiteboard.
     if (this.meta.size === 0) {
       doc.transact(
-        () => this.meta.set(MAIN_SHEET, { name: 'Pizarra 1', createdAt: Date.now() }),
+        () =>
+          this.meta.set(MAIN_SHEET, {
+            name: t('sketch.sheet.default', { n: 1 }),
+            createdAt: Date.now(),
+          }),
         ORIGIN,
       );
     }
@@ -52,7 +57,7 @@ export class SketchBook {
       const v = (raw ?? {}) as Partial<SheetInfo>;
       out.push({
         id,
-        name: typeof v.name === 'string' && v.name ? v.name : 'Pizarra',
+        name: typeof v.name === 'string' && v.name ? v.name : t('sketch.title'),
         createdAt: typeof v.createdAt === 'number' ? v.createdAt : 0,
       });
     });
@@ -67,7 +72,7 @@ export class SketchBook {
   /** Adds a whiteboard and returns its id. */
   add(name?: string): string {
     const id = this.newId();
-    const fallback = `Pizarra ${this.list.length + 1}`;
+    const fallback = t('sketch.sheet.default', { n: this.list.length + 1 });
     this.doc.transact(
       () => this.meta.set(id, { name: cleanName(name ?? '') || fallback, createdAt: Date.now() }),
       ORIGIN,
