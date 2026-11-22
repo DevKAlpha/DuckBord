@@ -9,6 +9,7 @@
  * cheap to compute on every render.
  */
 import type { Card, Column } from '@devbord/shared';
+import { t } from '../../i18n';
 
 export type CardMood = 'frozen' | 'hot' | 'stale' | 'stale2' | null;
 
@@ -51,8 +52,8 @@ export function describeMood(
   now = Date.now(),
 ) {
   if (!mood) return null;
-  if (mood === 'frozen') return 'Congelada: aparcada en el Icebox';
-  if (mood === 'hot') return 'Caliente: se ha movido mucho estos días';
+  if (mood === 'frozen') return t('mood.frozen');
+  if (mood === 'hot') return t('mood.hot');
   const days = Math.floor((now - Date.parse(card.movedAt ?? card.createdAt)) / DAY);
-  return `Sin avanzar desde hace ${days} días`;
+  return t.n('mood.stale', days);
 }

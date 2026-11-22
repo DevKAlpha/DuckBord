@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, IconButton, PixelIcon, Textarea } from '../../design';
+import { useT } from '../../i18n';
 
 export interface ComposerProps {
   /** Text of the collapsed trigger, e.g. "Añadir tarjeta". */
@@ -14,6 +15,7 @@ export interface ComposerProps {
  * Enter submits and keeps the composer open for fast entry; Escape closes it.
  */
 export function Composer({ triggerLabel, placeholder, submitLabel, onSubmit }: ComposerProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
 
@@ -55,7 +57,7 @@ export function Composer({ triggerLabel, placeholder, submitLabel, onSubmit }: C
         <Button variant="primary" size="sm" onClick={submit}>
           {submitLabel}
         </Button>
-        <IconButton icon="close" label="Cancelar" onClick={() => setOpen(false)} />
+        <IconButton icon="close" label={t('common.cancel')} onClick={() => setOpen(false)} />
       </div>
     </div>
   );

@@ -305,6 +305,19 @@ const ICONS = {
     [3, 3, 2, 2],
     [11, 11, 2, 2],
   ],
+  /** A globe: the language picker. */
+  globe: [
+    [5, 2, 6, 2],
+    [5, 12, 6, 2],
+    [2, 5, 2, 6],
+    [12, 5, 2, 6],
+    [3, 3, 2, 2],
+    [11, 3, 2, 2],
+    [3, 11, 2, 2],
+    [11, 11, 2, 2],
+    [4, 7, 8, 2],
+    [7, 4, 2, 8],
+  ],
   undo: UNDO,
   redo: UNDO.map(([x, y, w, h]) => [16 - x - w, y, w, h] as const),
   /** A path between two stops: the board's journey diagram. */

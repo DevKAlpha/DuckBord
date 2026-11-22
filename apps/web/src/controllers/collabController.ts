@@ -19,6 +19,7 @@ import type { Board } from '@devbord/shared';
 import type { CollabChannel, Presence } from '../models/collab';
 import { useBoardController } from './boardController';
 import { useIdentity } from './identityController';
+import { t } from '../i18n';
 
 /** Lazy-loads the collaboration stack (cached by the bundler after the first call). */
 const loadCollab = () => Promise.all([import('../models/collab'), import('yjs')]);
@@ -71,7 +72,7 @@ let generation = 0;
 export const useCollab = create<CollabState>((set, get) => {
   const me = (): Presence => {
     const { name, color } = useIdentity.getState();
-    return { name: name || 'Invitado', color, cursor, pen, editingNote };
+    return { name: name || t('common.guest'), color, cursor, pen, editingNote };
   };
   let cursor: Presence['cursor'] = null;
   let pen: Presence['pen'] = null;

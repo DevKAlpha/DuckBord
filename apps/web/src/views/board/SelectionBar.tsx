@@ -7,9 +7,11 @@ import type { Board } from '@devbord/shared';
 import { useBoardController } from '../../controllers/boardController';
 import { orderedSelection, useSelection } from '../../controllers/selectionController';
 import { IconButton, PixelIcon, animateIn, animateLand } from '../../design';
+import { useT } from '../../i18n';
 
 export function SelectionBar({ board }: { board: Board }) {
   const ids = useSelection((s) => s.ids);
+  const t = useT();
   const selected = orderedSelection(board, ids);
   const barRef = useRef<HTMLDivElement>(null);
   const visible = selected.length > 0;
@@ -40,27 +42,25 @@ export function SelectionBar({ board }: { board: Board }) {
       <div
         ref={barRef}
         role="toolbar"
-        aria-label="Tarjetas seleccionadas"
+        aria-label={t('selection.aria')}
         className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-line-soft bg-card py-1.5 pr-1.5 pl-3 shadow-lift"
       >
         <span className="grid h-6 min-w-6 place-items-center rounded-lg bg-accent px-1.5 text-sm text-accent-ink tabular-nums">
           {selected.length}
         </span>
-        <span className="text-sm">
-          {selected.length === 1 ? 'tarjeta seleccionada' : 'tarjetas seleccionadas'}
-        </span>
+        <span className="text-sm">{t.n('selection.count', selected.length)}</span>
         <span className="relative inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-soft bg-surface-2 px-2.5 text-sm hover:bg-surface-3">
           <PixelIcon name="board" size={12} />
-          Mover a…
+          {t('selection.moveTo')}
           <PixelIcon name="chevron" size={12} />
           <select
-            aria-label="Mover las tarjetas seleccionadas a la columna"
+            aria-label={t('selection.moveAria')}
             className="absolute inset-0 cursor-pointer opacity-0"
             value=""
             onChange={(e) => moveTo(e.target.value)}
           >
             <option value="" disabled>
-              Mover a…
+              {t('selection.moveTo')}
             </option>
             {board.columns.map((c) => (
               <option key={c.id} value={c.id}>
@@ -71,7 +71,7 @@ export function SelectionBar({ board }: { board: Board }) {
         </span>
         <IconButton
           icon="close"
-          label="Quitar selección (Esc)"
+          label={t('selection.clear')}
           onClick={() => useSelection.getState().clear()}
         />
       </div>

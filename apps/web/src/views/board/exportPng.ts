@@ -7,6 +7,7 @@
  */
 import { PROFILE_FEATURES, type Board } from '@devbord/shared';
 import { CARD_TYPE_META, PRIORITY_META, previewText } from './cardMeta';
+import { dateFormat, t } from '../../i18n';
 
 const SCALE = 2; // Retina-crisp output.
 const PAD = 32;
@@ -15,7 +16,7 @@ const COL_GAP = 16;
 const COL_PAD = 10;
 const CARD_PAD = 12;
 const CARD_GAP = 10;
-const FONT = '"Pixelify Sans", ui-monospace, monospace';
+const FONT = '"Pixelify Sans", "Galmuri11", ui-monospace, monospace';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -78,15 +79,15 @@ function layoutCards(ctx: Ctx, board: Board) {
       const meta: Chip[] = [];
       if (features.cardTypes && card.type !== 'task') {
         const m = CARD_TYPE_META[card.type];
-        meta.push({ text: m.label, ...label(m.color) });
+        meta.push({ text: t(m.label), ...label(m.color) });
       }
       if (features.priority && card.priority) {
         const m = PRIORITY_META[card.priority];
-        meta.push({ text: m.label, ...label(m.color) });
+        meta.push({ text: t(m.label), ...label(m.color) });
       }
       if (features.agile && card.storyPoints !== null) {
         meta.push({
-          text: `${card.storyPoints} pts`,
+          text: t('export.points', { n: card.storyPoints }),
           bg: themeColor('surface-3'),
           fg: themeColor('ink'),
         });
@@ -159,7 +160,7 @@ export async function renderBoardPng(board: Board): Promise<Blob> {
   ctx.fillText(board.name, PAD, PAD + 26);
   ctx.fillStyle = themeColor('muted');
   ctx.font = `400 12px ${FONT}`;
-  const date = new Intl.DateTimeFormat('es', { dateStyle: 'long' }).format(new Date());
+  const date = dateFormat({ dateStyle: 'long' }).format(new Date());
   ctx.fillText(`DuckBord · ${date}`, PAD, PAD + 48);
 
   board.columns.forEach((column, i) => {

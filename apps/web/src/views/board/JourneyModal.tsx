@@ -11,6 +11,7 @@ import type { Board } from '@devbord/shared';
 import { Modal } from '../../design';
 import { KIND_COLOR, columnKind } from './columnKind';
 import { boardJourney, formatStay, type Transition } from './journey';
+import { dateFormat, useT } from '../../i18n';
 
 /** Width of one station in the diagram (px). */
 const STATION = 120;
@@ -19,12 +20,8 @@ const LANE = 10;
 /** Cards listed below the diagram; the rest is summarized. */
 const MAX_ROWS = 40;
 
-const dateFmt = new Intl.DateTimeFormat('es', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const dateFmt = () =>
+  dateFormat({ day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** Ring color of a column, the same one its header shows. */
 const columnColor = (board: Board, i: number) => {
@@ -39,6 +36,8 @@ const byLane = (list: Transition[]) =>
   [...list].sort((a, b) => Math.abs(a.to - a.from) - Math.abs(b.to - b.from) || a.from - b.from);
 
 function FlowDiagram({ board, transitions }: { board: Board; transitions: Transition[] }) {
+  // `tr`: here `t` names the transitions.
+  const tr = useT();
   const n = board.columns.length;
   const forward = byLane(transitions.filter((t) => t.to > t.from));
   const back = byLane(transitions.filter((t) => t.to < t.from));
@@ -91,7 +90,7 @@ function FlowDiagram({ board, transitions }: { board: Board; transitions: Transi
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label="Diagrama de movimientos entre columnas"
+        aria-label={tr('journey.diagram')}
         shapeRendering="crispEdges"
         className="block"
       >
@@ -101,7 +100,7 @@ function FlowDiagram({ board, transitions }: { board: Board; transitions: Transi
               {col.title.length > 14 ? col.title.slice(0, 13) + '…' : col.title}
             </text>
             <text x={cx(i)} y={27} textAnchor="middle" className="fill-faint text-[10px]">
-              {col.cards.length} {col.cards.length === 1 ? 'tarjeta' : 'tarjetas'}
+              {tr.n('home.cards', col.cards.length)}
             </text>
           </g>
         ))}
@@ -136,37 +135,36 @@ export function JourneyModal({
   onClose: () => void;
 }) {
   const journey = useMemo(() => (open ? boardJourney(board) : null), [board, open]);
+  const t = useT();
 
   return (
-    <Modal open={open} title="Recorrido de las tarjetas" onClose={onClose} size="lg">
+    <Modal open={open} title={t('journey.title')} onClose={onClose} size="lg">
       {journey && (
         <div className="flex min-w-0 flex-col gap-4">
           <p className="text-sm text-muted">
             <span className="text-ink tabular-nums">{journey.moves}</span>{' '}
-            {journey.moves === 1 ? 'cambio de columna' : 'cambios de columna'}
+            {t.n('journey.moves', journey.moves)}
             {journey.backward > 0 && (
               <>
                 {' · '}
                 <span className="text-[var(--label-red-ink)] tabular-nums">
                   {journey.backward}
                 </span>{' '}
-                {journey.backward === 1 ? 'vuelta atrás' : 'vueltas atrás'}
+                {t.n('journey.backward', journey.backward)}
               </>
             )}
             {' · '}
-            <span className="tabular-nums">{journey.still}</span> sin moverse todavía
+            <span className="tabular-nums">{journey.still}</span> {t('journey.still')}
           </p>
 
           {journey.moves === 0 ? (
             <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
-              Aún no hay recorridos. Mueve una tarjeta de columna y aparecerá aquí.
+              {t('journey.empty')}
             </p>
           ) : (
             <>
               <FlowDiagram board={board} transitions={journey.transitions} />
-              <p className="-mt-2 text-xs text-faint">
-                Arriba, lo que avanzó; abajo, lo que volvió atrás. Cuanto más grueso, más tarjetas.
-              </p>
+              <p className="-mt-2 text-xs text-faint">{t('journey.legend')}</p>
               <ol className="flex max-h-[45vh] flex-col gap-2 overflow-y-auto pr-1">
                 {journey.rows.slice(0, MAX_ROWS).map(({ card, stops }) => (
                   <li
@@ -184,7 +182,7 @@ export function JourneyModal({
                         <li key={i} className="flex items-center gap-1">
                           {i > 0 && (
                             <span
-                              aria-label={stop.backward ? 'vuelve a' : 'pasa a'}
+                              aria-label={stop.backward ? t('journey.back') : t('journey.to')}
                               className={
                                 stop.backward ? 'text-[var(--label-red-ink)]' : 'text-faint'
                               }
@@ -194,7 +192,9 @@ export function JourneyModal({
                           )}
                           <span
                             // Pixel tooltip from the cursor (native titles use the system font).
-                            data-cursor-hint={`Entró el ${dateFmt.format(new Date(stop.at))}`}
+                            data-cursor-hint={t('journey.entered', {
+                              date: dateFmt().format(new Date(stop.at)),
+                            })}
                             className="inline-flex items-center gap-1 rounded-md border border-line-soft px-1.5 py-0.5"
                           >
                             <span
@@ -202,9 +202,9 @@ export function JourneyModal({
                               className="size-2"
                               style={{ background: columnColor(board, stop.column) }}
                             />
-                            {board.columns[stop.column]?.title ?? 'Columna eliminada'}
+                            {board.columns[stop.column]?.title ?? t('journey.deletedColumn')}
                             <span className="text-faint">
-                              {stop.stayed === null ? 'ahora' : formatStay(stop.stayed)}
+                              {stop.stayed === null ? t('journey.now') : formatStay(stop.stayed)}
                             </span>
                           </span>
                         </li>
@@ -215,7 +215,7 @@ export function JourneyModal({
               </ol>
               {journey.rows.length > MAX_ROWS && (
                 <p className="text-xs text-faint">
-                  Y {journey.rows.length - MAX_ROWS} tarjetas más con recorrido.
+                  {t('journey.more', { n: journey.rows.length - MAX_ROWS })}
                 </p>
               )}
             </>

@@ -7,7 +7,6 @@ import type { ReactNode } from 'react';
 import {
   BoardModeSchema,
   BoardSkinSchema,
-  PROFILE_INFO,
   ProfileSchema,
   type BoardMode,
   type BoardSkin,
@@ -15,6 +14,7 @@ import {
 } from '@devbord/shared';
 import { cx } from '../../design';
 import { SKINS } from '../../controllers/themeController';
+import { useT } from '../../i18n';
 import type { BoardTemplate } from '../../templates';
 
 interface OptionCardProps {
@@ -69,8 +69,9 @@ export function ProfilePicker({
   value: Profile;
   onChange: (p: Profile) => void;
 }) {
+  const t = useT();
   return (
-    <div role="radiogroup" aria-label="Perfil" className="grid gap-3 sm:grid-cols-2">
+    <div role="radiogroup" aria-label={t('pickers.profile')} className="grid gap-3 sm:grid-cols-2">
       {ProfileSchema.options.map((p) => (
         <OptionCard
           key={p}
@@ -78,8 +79,8 @@ export function ProfilePicker({
           value={p}
           checked={value === p}
           onSelect={() => onChange(p)}
-          title={PROFILE_INFO[p].title}
-          description={PROFILE_INFO[p].description}
+          title={t(`profile.${p}.title`)}
+          description={t(`profile.${p}.description`)}
         />
       ))}
     </div>
@@ -125,8 +126,9 @@ export function SkinPicker({
   value: BoardSkin;
   onChange: (skin: BoardSkin) => void;
 }) {
+  const t = useT();
   return (
-    <div role="radiogroup" aria-label="Tema" className="grid gap-3 sm:grid-cols-3">
+    <div role="radiogroup" aria-label={t('pickers.skin')} className="grid gap-3 sm:grid-cols-3">
       {BoardSkinSchema.options.map((s) => (
         <OptionCard
           key={s}
@@ -134,8 +136,8 @@ export function SkinPicker({
           value={s}
           checked={value === s}
           onSelect={() => onChange(s)}
-          title={SKINS[s].title}
-          description={SKINS[s].description}
+          title={t(`skin.${s}.title`)}
+          description={t(`skin.${s}.description`)}
           preview={<SkinPreview skin={s} />}
         />
       ))}
@@ -165,34 +167,24 @@ export function TemplatePicker({
   value: string;
   onChange: (id: string) => void;
 }) {
+  const t = useT();
   return (
-    <div role="radiogroup" aria-label="Plantilla" className="grid gap-3 sm:grid-cols-2">
-      {templates.map((t) => (
+    <div role="radiogroup" aria-label={t('pickers.template')} className="grid gap-3 sm:grid-cols-2">
+      {templates.map((tpl) => (
         <OptionCard
-          key={t.id}
+          key={tpl.id}
           name="template"
-          value={t.id}
-          checked={value === t.id}
-          onSelect={() => onChange(t.id)}
-          title={t.name}
-          description={t.description}
-          preview={<ColumnsPreview count={t.columns.length} />}
+          value={tpl.id}
+          checked={value === tpl.id}
+          onSelect={() => onChange(tpl.id)}
+          title={tpl.name}
+          description={tpl.description}
+          preview={<ColumnsPreview count={tpl.columns.length} />}
         />
       ))}
     </div>
   );
 }
-
-const MODE_INFO: Record<BoardMode, { title: string; description: string }> = {
-  personal: {
-    title: 'Individual',
-    description: 'Solo tú. Se guarda en este navegador.',
-  },
-  team: {
-    title: 'Equipo',
-    description: 'En tiempo real con quien tenga el enlace de invitación.',
-  },
-};
 
 /**
  * Personal vs team, chosen once at creation. Shown as two cards so the
@@ -205,8 +197,9 @@ export function ModePicker({
   value: BoardMode;
   onChange: (m: BoardMode) => void;
 }) {
+  const t = useT();
   return (
-    <div role="radiogroup" aria-label="Tipo de tablero" className="grid gap-3 sm:grid-cols-2">
+    <div role="radiogroup" aria-label={t('pickers.mode')} className="grid gap-3 sm:grid-cols-2">
       {BoardModeSchema.options.map((m) => (
         <OptionCard
           key={m}
@@ -214,8 +207,8 @@ export function ModePicker({
           value={m}
           checked={value === m}
           onSelect={() => onChange(m)}
-          title={MODE_INFO[m].title}
-          description={MODE_INFO[m].description}
+          title={t(`mode.${m}.title`)}
+          description={t(`mode.${m}.description`)}
         />
       ))}
     </div>

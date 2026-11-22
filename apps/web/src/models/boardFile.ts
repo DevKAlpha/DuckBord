@@ -9,6 +9,7 @@
  * Validation uses the shared BoardSchema, the same one IndexedDB and the API use.
  */
 import { BoardSchema, newId, newShareKey, type Board } from '@devbord/shared';
+import { t } from '../i18n';
 
 export const BOARD_FILE_FORMAT = 'devbord.board';
 export const BOARD_FILE_VERSION = 1;
@@ -42,7 +43,7 @@ export function parseBoardFile(text: string): Board {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new BoardFileError('El archivo no es un JSON válido.');
+    throw new BoardFileError(t('file.notJson'));
   }
 
   const wrapped =
@@ -50,15 +51,15 @@ export function parseBoardFile(text: string): Board {
       ? (data as { format: unknown; version?: unknown; board?: unknown })
       : null;
   if (wrapped && wrapped.format !== BOARD_FILE_FORMAT) {
-    throw new BoardFileError('El archivo no es un tablero de DuckBord.');
+    throw new BoardFileError(t('file.notBoard'));
   }
   if (wrapped && typeof wrapped.version === 'number' && wrapped.version > BOARD_FILE_VERSION) {
-    throw new BoardFileError('El archivo viene de una versión más nueva de DuckBord.');
+    throw new BoardFileError(t('file.newer'));
   }
 
   const result = BoardSchema.safeParse(wrapped ? wrapped.board : data);
   if (!result.success) {
-    throw new BoardFileError('El tablero del archivo está incompleto o dañado.');
+    throw new BoardFileError(t('file.damaged'));
   }
   const now = new Date().toISOString();
   const board = result.data;

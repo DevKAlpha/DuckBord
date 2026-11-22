@@ -20,6 +20,7 @@ import {
 import { ProviderMark } from './ProviderMark';
 import { GithubProjectsModal } from './GithubProjectsModal';
 import { useGithub } from '../../controllers/githubController';
+import { useT, type MessageKey } from '../../i18n';
 
 export function ConnectionsModal({
   board,
@@ -30,8 +31,9 @@ export function ConnectionsModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const t = useT();
   return (
-    <Modal open={open} title="Conexiones" onClose={onClose}>
+    <Modal open={open} title={t('board.connections')} onClose={onClose}>
       {open && <ConnectionList board={board} />}
     </Modal>
   );
@@ -39,6 +41,7 @@ export function ConnectionsModal({
 
 function ConnectionList({ board }: { board: Board }) {
   const error = useConnections((s) => s.error);
+  const t = useT();
   // Tokens expire; re-check each time the panel opens.
   useEffect(() => {
     useConnections.getState().refresh();
@@ -46,10 +49,7 @@ function ConnectionList({ board }: { board: Board }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="-mt-1 text-sm text-muted">
-        Para adjuntar archivos de Google Drive, OneDrive o Slack no hace falta conectar nada: pega
-        su enlace en la tarjeta.
-      </p>
+      <p className="-mt-1 text-sm text-muted">{t('conn.intro')}</p>
       {CONNECTIONS.map((c) => (
         <section key={c.id} className="rounded-xl border border-line-soft bg-surface-2 p-3">
           <header className="mb-1 flex items-center gap-2">
@@ -61,7 +61,7 @@ function ConnectionList({ board }: { board: Board }) {
               </span>
             )}
           </header>
-          <p className="text-sm text-muted">{c.description}</p>
+          <p className="text-sm text-muted">{t(`conn.${c.id}.description`)}</p>
           <Tools connection={c} />
           {c.id === 'slack' ? (
             <SlackForm boardId={board.id} />
@@ -83,14 +83,17 @@ function ConnectionList({ board }: { board: Board }) {
 
 /** The tools of a connection, as an agent would see them. */
 function Tools({ connection }: { connection: Connection }) {
+  const t = useT();
+  // The calendar tool names its calendar.
+  const calendar = connection.id === 'google' ? 'Google Calendar' : 'Outlook';
   return (
     <ul className="mt-2 flex flex-col gap-1 text-xs">
-      {connection.tools.map((t) => (
-        <li key={t.name} className="flex flex-wrap items-baseline gap-x-2">
+      {connection.tools.map((tool) => (
+        <li key={tool.name} className="flex flex-wrap items-baseline gap-x-2">
           <code className="rounded bg-surface-3 px-1 py-px font-mono text-[11px] text-ink">
-            {t.name}
+            {tool.name}
           </code>
-          <span className="text-faint">{t.description}</span>
+          <span className="text-faint">{t(`tool.${tool.name}` as MessageKey, { calendar })}</span>
         </li>
       ))}
     </ul>
@@ -99,10 +102,12 @@ function Tools({ connection }: { connection: Connection }) {
 
 function AccountStatus({ id }: { id: AccountId }) {
   const on = useConnections((s) => s.signedIn[id]);
-  if (!isConfigured(id)) return <span className="text-xs text-faint">Sin configurar</span>;
+  const t = useT();
+  if (!isConfigured(id))
+    return <span className="text-xs text-faint">{t('conn.notConfigured')}</span>;
   return (
     <span className={on ? 'text-xs text-[var(--label-green-ink)]' : 'text-xs text-faint'}>
-      {on ? 'Conectada' : 'Sin conectar'}
+      {on ? t('conn.connected') : t('conn.notConnected')}
     </span>
   );
 }
@@ -111,19 +116,16 @@ function AccountActions({ id }: { id: AccountId }) {
   const on = useConnections((s) => s.signedIn[id]);
   const busy = useConnections((s) => s.busy);
   const { connect, disconnect } = useConnections.getState();
+  const t = useT();
 
   if (!isConfigured(id)) {
-    return (
-      <p className="mt-2 text-xs text-faint">
-        Falta el Client ID de esta app en la configuración de DuckBord (docs/integraciones.md).
-      </p>
-    );
+    return <p className="mt-2 text-xs text-faint">{t('conn.missingClientId')}</p>;
   }
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
       {on ? (
         <Button size="sm" onClick={() => disconnect(id)}>
-          Desconectar
+          {t('conn.disconnect')}
         </Button>
       ) : (
         <Button
@@ -132,10 +134,10 @@ function AccountActions({ id }: { id: AccountId }) {
           disabled={busy !== null}
           onClick={() => void connect(id)}
         >
-          {busy === id ? 'Conectando…' : 'Conectar'}
+          {busy === id ? t('common.connecting') : t('conn.connect')}
         </Button>
       )}
-      <span className="text-xs text-faint">La sesión dura mientras esta pestaña siga abierta.</span>
+      <span className="text-xs text-faint">{t('conn.sessionTab')}</span>
     </div>
   );
 }
@@ -147,6 +149,7 @@ function SlackForm({ boardId }: { boardId: string }) {
   const [notify, setNotify] = useState<SlackConfig['notify']>(saved?.notify ?? 'all');
   const [note, setNote] = useState<string | null>(null);
   const valid = isSlackWebhook(webhook);
+  const t = useT();
 
   return (
     <form
@@ -157,10 +160,10 @@ function SlackForm({ boardId }: { boardId: string }) {
         const config = { webhook: webhook.trim(), notify };
         saveSlack(boardId, config);
         setSaved(config);
-        setNote('Guardado. Los avisos salen desde este navegador.');
+        setNote(t('slack.saved'));
       }}
     >
-      <Field label="Webhook del canal" htmlFor="slack-webhook">
+      <Field label={t('slack.webhook')} htmlFor="slack-webhook">
         <Input
           id="slack-webhook"
           type="url"
@@ -177,31 +180,31 @@ function SlackForm({ boardId }: { boardId: string }) {
       </Field>
       <div className="flex flex-wrap items-end gap-2">
         <div className="w-56">
-          <Field label="Avisar cuando" htmlFor="slack-notify">
+          <Field label={t('slack.notify')} htmlFor="slack-notify">
             <Select
               id="slack-notify"
               className="h-8 text-sm"
               value={notify}
               onChange={(e) => setNotify(e.target.value === 'done' ? 'done' : 'all')}
             >
-              <option value="all">Cambia de columna</option>
-              <option value="done">Se termina (última columna)</option>
+              <option value="all">{t('slack.notifyAll')}</option>
+              <option value="done">{t('slack.notifyDone')}</option>
             </Select>
           </Field>
         </div>
         <Button size="sm" type="submit" variant="primary" disabled={!valid}>
-          Guardar
+          {t('common.save')}
         </Button>
         <Button
           size="sm"
           disabled={!valid}
           onClick={() =>
-            void postToSlack(webhook.trim(), ':wave: DuckBord está conectado a este canal.')
-              .then(() => setNote('Mensaje de prueba enviado. Revisa el canal.'))
-              .catch(() => setNote('No se pudo enviar. Revisa tu conexión.'))
+            void postToSlack(webhook.trim(), t('slack.hello'))
+              .then(() => setNote(t('slack.testSent')))
+              .catch(() => setNote(t('slack.testFailed')))
           }
         >
-          Probar
+          {t('slack.test')}
         </Button>
         {saved && (
           <Button
@@ -211,18 +214,15 @@ function SlackForm({ boardId }: { boardId: string }) {
               saveSlack(boardId, null);
               setSaved(null);
               setWebhook('');
-              setNote('Canal quitado.');
+              setNote(t('slack.removed'));
             }}
           >
-            Quitar
+            {t('slack.remove')}
           </Button>
         )}
       </div>
       <p className="text-xs text-faint" aria-live="polite">
-        {note ??
-          (webhook && !valid
-            ? 'El webhook empieza por https://hooks.slack.com/services/'
-            : 'En Slack: Apps › Incoming Webhooks › Añadir a un canal. Se guarda solo en este navegador; no se comparte con el equipo.')}
+        {note ?? (webhook && !valid ? t('slack.invalid') : t('slack.help'))}
       </p>
     </form>
   );
@@ -232,20 +232,17 @@ function SlackForm({ boardId }: { boardId: string }) {
 function GithubSection({ board }: { board: Board }) {
   const { configured, user, busy } = useGithub();
   const [picking, setPicking] = useState(false);
+  const t = useT();
   useEffect(() => void useGithub.getState().init(), []);
 
   if (!configured) {
-    return (
-      <p className="mt-2 text-xs text-faint">
-        Necesita el servidor de DuckBord con una GitHub App (VITE_GITHUB_API_URL, docs/github.md).
-      </p>
-    );
+    return <p className="mt-2 text-xs text-faint">{t('github.needsServer')}</p>;
   }
   return (
     <div className="mt-3 flex flex-col gap-2">
       {board.github && (
         <p className="text-xs text-muted">
-          Este tablero refleja{' '}
+          {t('github.mirrors')}{' '}
           <a
             href={board.github.url}
             target="_blank"
@@ -254,7 +251,7 @@ function GithubSection({ board }: { board: Board }) {
           >
             {board.github.owner} · Project #{board.github.number}
           </a>
-          . Las columnas son su campo Status: se editan en GitHub.
+          {t('github.mirrorsColumns')}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
@@ -266,11 +263,11 @@ function GithubSection({ board }: { board: Board }) {
             </span>
             {!board.github && (
               <Button size="sm" variant="primary" onClick={() => setPicking(true)}>
-                Abrir un Project como tablero
+                {t('github.openProject')}
               </Button>
             )}
             <Button size="sm" variant="ghost" onClick={() => void useGithub.getState().signOut()}>
-              Desconectar
+              {t('conn.disconnect')}
             </Button>
           </>
         ) : (
@@ -280,7 +277,7 @@ function GithubSection({ board }: { board: Board }) {
             disabled={busy}
             onClick={() => void useGithub.getState().signIn()}
           >
-            {busy ? 'Conectando…' : 'Conectar con GitHub'}
+            {busy ? t('common.connecting') : t('github.connect')}
           </Button>
         )}
       </div>

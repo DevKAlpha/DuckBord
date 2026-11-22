@@ -5,6 +5,7 @@ import { useLobby } from '../controllers/lobbyController';
 import { watchMotion } from '../controllers/motionController';
 import { usePreferences } from '../controllers/preferencesController';
 import { ConfirmHost } from '../design';
+import { useT } from '../i18n';
 import { PixelCursor } from './cursor/PixelCursor';
 import { BoardPage } from './pages/BoardPage';
 import { BoardsPage } from './pages/BoardsPage';
@@ -26,6 +27,7 @@ function HomeRoute() {
 export function App() {
   const status = useBoardController((s) => s.status);
   const error = useBoardController((s) => s.error);
+  const t = useT();
 
   useEffect(() => {
     void useBoardController.getState().load();
@@ -38,7 +40,7 @@ export function App() {
   if (status === 'idle' || status === 'loading') {
     return (
       <div className="grid h-full place-items-center font-pixel text-muted" role="status">
-        Cargando…
+        {t('common.loading')}
       </div>
     );
   }

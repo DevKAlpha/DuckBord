@@ -1,19 +1,19 @@
 /** Display metadata (wording + color) for card enums. Pure presentation. */
 import type { CardType, LabelColor, Priority } from '@devbord/shared';
+import { dateFormat, type MessageKey } from '../../i18n';
 
-export const CARD_TYPE_META: Record<CardType, { label: string; color: LabelColor }> = {
-  task: { label: 'Tarea', color: 'gray' },
-  feature: { label: 'Feature', color: 'purple' },
-  bug: { label: 'Bug', color: 'red' },
+/** `label` is a text key: show it with `t(meta.label)`. */
+export const CARD_TYPE_META: Record<CardType, { label: MessageKey; color: LabelColor }> = {
+  task: { label: 'card.type.task', color: 'gray' },
+  feature: { label: 'card.type.feature', color: 'purple' },
+  bug: { label: 'card.type.bug', color: 'red' },
 };
 
-export const PRIORITY_META: Record<Priority, { label: string; color: LabelColor }> = {
-  low: { label: 'Baja', color: 'green' },
-  medium: { label: 'Media', color: 'yellow' },
-  high: { label: 'Alta', color: 'orange' },
+export const PRIORITY_META: Record<Priority, { label: MessageKey; color: LabelColor }> = {
+  low: { label: 'card.priority.low', color: 'green' },
+  medium: { label: 'card.priority.medium', color: 'yellow' },
+  high: { label: 'card.priority.high', color: 'orange' },
 };
-
-const dateFormat = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' });
 
 /**
  * Formats a YYYY-MM-DD due date and reports whether it is overdue.
@@ -23,7 +23,10 @@ export function describeDueDate(dueDate: string, today = new Date()) {
   const [y, m, d] = dueDate.split('-').map(Number) as [number, number, number];
   const date = new Date(y, m - 1, d);
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return { text: dateFormat.format(date), overdue: date < startOfToday };
+  return {
+    text: dateFormat({ day: 'numeric', month: 'short' }).format(date),
+    overdue: date < startOfToday,
+  };
 }
 
 /**

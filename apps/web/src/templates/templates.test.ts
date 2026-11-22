@@ -1,16 +1,60 @@
 import { describe, expect, it } from 'vitest';
 import { BoardSchema } from '@devbord/shared';
+import { buildBoardFromTemplate, getTemplate, templatesFor, type BoardTemplate } from './index';
 import {
-  TEMPLATES,
+  TEMPLATES_ES as TEMPLATES,
   NETWORK_CHANGE_TEMPLATE,
   IT_TICKET_TEMPLATE,
   CONTENT_BRIEF_TEMPLATE,
   USER_STORY_TEMPLATE,
-  buildBoardFromTemplate,
-  getTemplate,
-  templatesFor,
-} from './index';
+} from './locales/es';
+import { TEMPLATES_EN } from './locales/en';
+import { TEMPLATES_KO } from './locales/ko';
 import { previewText } from '../views/board/cardMeta';
+
+/** Everything but the words: what must be identical in every language. */
+const shape = (list: readonly BoardTemplate[]) =>
+  list.map((t) => ({
+    id: t.id,
+    profile: t.profile,
+    everyone: t.everyone ?? false,
+    lockedProfile: t.lockedProfile ?? false,
+    columns: t.columns.length,
+    wipLimits: t.wipLimits ?? null,
+    columnDescriptions: t.columnDescriptions?.length ?? 0,
+    labels: t.labels.map((l) => l.color),
+    cardTemplate: Boolean(t.cardTemplate),
+    cards: t.cards.map((c) => ({
+      column: c.column,
+      // Labels by position in the template's label list (names are translated).
+      labels: (c.labels ?? []).map((name) => t.labels.findIndex((l) => l.name === name)),
+      dueInDays: c.dueInDays ?? null,
+      patch: {
+        ...c.patch,
+        description: c.patch?.description ? 'text' : undefined,
+        sprint: c.patch?.sprint ? 'text' : undefined,
+      },
+    })),
+  }));
+
+describe('templates in every language', () => {
+  it.each([
+    ['en', TEMPLATES_EN],
+    ['ko', TEMPLATES_KO],
+  ] as const)('%s has the same templates, columns, labels and cards as Spanish', (_l, list) => {
+    expect(shape(list)).toEqual(shape(TEMPLATES));
+    // Every card label exists in its template (no -1 from a mistyped name).
+    for (const t of shape(list)) for (const c of t.cards) expect(c.labels).not.toContain(-1);
+  });
+
+  it.each([
+    ['en', TEMPLATES_EN],
+    ['ko', TEMPLATES_KO],
+  ] as const)('%s templates build valid boards', (_l, list) => {
+    for (const template of list)
+      expect(BoardSchema.safeParse(buildBoardFromTemplate(template)).success).toBe(true);
+  });
+});
 
 describe('templates', () => {
   it.each(TEMPLATES.map((t) => [t.id, t] as const))('%s builds a valid board', (_id, template) => {

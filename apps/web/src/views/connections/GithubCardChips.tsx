@@ -6,6 +6,7 @@
 import type { CardGithub, PullRequestRef } from '@devbord/shared';
 import { PixelIcon } from '../../design';
 import { prLabel } from './prLabel';
+import { useT } from '../../i18n';
 
 const PR_COLOR: Record<PullRequestRef['state'], string> = {
   open: 'var(--label-green-ink)',
@@ -16,11 +17,12 @@ const PR_COLOR: Record<PullRequestRef['state'], string> = {
 /** Top line: "#12" and the epic it belongs to. */
 export function GithubRef({ github }: { github: CardGithub }) {
   const open = github.state === 'open';
+  const t = useT();
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted">
       <span
         className="inline-flex shrink-0 items-center gap-1"
-        data-cursor-hint={`${github.repo}#${github.number} · ${open ? 'abierto' : 'cerrado'}`}
+        data-cursor-hint={`${github.repo}#${github.number} · ${open ? t('github.open') : t('github.closed')}`}
       >
         <PixelIcon
           name="issue"
@@ -32,7 +34,7 @@ export function GithubRef({ github }: { github: CardGithub }) {
       {github.parent && (
         <span
           className="min-w-0 truncate rounded-sm border border-line px-1 text-[10px]"
-          data-cursor-hint={`Epic #${github.parent.number}`}
+          data-cursor-hint={t('github.epicNumber', { n: github.parent.number })}
         >
           {github.parent.title}
         </span>
@@ -44,13 +46,17 @@ export function GithubRef({ github }: { github: CardGithub }) {
 /** Bottom line: epic progress, pull requests and assignees. Nothing when empty. */
 export function GithubMeta({ github }: { github: CardGithub }) {
   const { subIssues, pullRequests, assignees } = github;
+  const t = useT();
   if (!subIssues && pullRequests.length === 0 && assignees.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
       {subIssues && (
         <span
           className="inline-flex items-center gap-1 rounded-sm border border-line px-1 tabular-nums"
-          aria-label={`Epic: ${subIssues.completed} de ${subIssues.total} sub-issues cerrados`}
+          aria-label={t('github.epicProgress', {
+            done: subIssues.completed,
+            total: subIssues.total,
+          })}
         >
           Epic
           {/* Pixel progress bar: 8 cells. */}

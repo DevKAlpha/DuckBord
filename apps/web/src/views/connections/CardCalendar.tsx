@@ -15,6 +15,7 @@ import {
   type CalendarEvent,
 } from '../../integrations/calendar';
 import { runTool } from '../../integrations/connections';
+import { useT } from '../../i18n';
 
 /** Calendar URLs carry the details in the query; keep them short. */
 const DETAILS_MAX = 500;
@@ -31,11 +32,15 @@ export function CardCalendar({
   description: string;
 }) {
   const signedIn = useConnections((s) => s.signedIn);
+  const t = useT();
   const [status, setStatus] = useState<{ text: string; link?: string } | null>(null);
   const event: CalendarEvent = {
     title,
     date,
-    details: [description.slice(0, DETAILS_MAX), `Tarjeta en DuckBord: ${window.location.href}`]
+    details: [
+      description.slice(0, DETAILS_MAX),
+      t('calendar.cardLink', { url: window.location.href }),
+    ]
       .filter(Boolean)
       .join('\n\n'),
   };
@@ -45,11 +50,11 @@ export function CardCalendar({
       window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
       return;
     }
-    setStatus({ text: 'Creando el evento…' });
+    setStatus({ text: t('calendar.creating') });
     runTool(id, 'create_calendar_event', { ...event })
-      .then((link) => setStatus({ text: 'Evento creado.', link }))
+      .then((link) => setStatus({ text: t('calendar.created'), link }))
       .catch((e: unknown) => {
-        setStatus({ text: e instanceof Error ? e.message : 'No se pudo crear el evento.' });
+        setStatus({ text: e instanceof Error ? e.message : t('calendar.failed') });
         useConnections.getState().refresh();
       });
   };
@@ -58,7 +63,7 @@ export function CardCalendar({
     const blob = new Blob([icsFile(event, cardId)], { type: 'text/calendar' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${title.replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40) || 'tarjeta'}.ics`;
+    a.download = `${title.replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40) || t('card.role')}.ics`;
     a.click();
     // Revoke later: some browsers start the download after click() returns.
     setTimeout(() => URL.revokeObjectURL(a.href), 1_000);
@@ -67,7 +72,7 @@ export function CardCalendar({
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-xs font-semibold tracking-wide text-muted uppercase">
-        Llevar la fecha al calendario
+        {t('calendar.title')}
       </p>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={() => send('google', googleCalendarUrl(event))}>
@@ -80,7 +85,7 @@ export function CardCalendar({
         </Button>
         <Button size="sm" variant="ghost" onClick={download}>
           <PixelIcon name="download" />
-          Archivo .ics
+          {t('calendar.ics')}
         </Button>
       </div>
       {status && (
@@ -88,7 +93,7 @@ export function CardCalendar({
           {status.text}{' '}
           {status.link && (
             <a href={status.link} target="_blank" rel="noopener noreferrer" className="underline">
-              Abrir
+              {t('calendar.open')}
             </a>
           )}
         </p>

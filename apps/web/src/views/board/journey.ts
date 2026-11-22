@@ -4,6 +4,7 @@
  * the diagram (JourneyModal) only draws what this returns.
  */
 import { cardTrail, type Board, type Card } from '@devbord/shared';
+import { t } from '../../i18n';
 
 /** Cards that went from column `from` to column `to` (indexes in board order). */
 export interface Transition {
@@ -89,8 +90,8 @@ export function boardJourney(board: Board): Journey {
 /** "3 min", "5 h", "2 d": how long a card stayed in a column. */
 export function formatStay(ms: number): string {
   const min = Math.max(0, Math.round(ms / 60_000));
-  if (min < 60) return `${Math.max(1, min)} min`;
+  if (min < 60) return t('journey.minutes', { n: Math.max(1, min) });
   const h = Math.round(min / 60);
-  if (h < 24) return `${h} h`;
-  return `${Math.round(h / 24)} d`;
+  if (h < 24) return t('journey.hours', { n: h });
+  return t('journey.days', { n: Math.round(h / 24) });
 }

@@ -21,6 +21,7 @@ import { usePreferences } from '../../controllers/preferencesController';
 import { SkinBackdrop } from '../board/SkinBackdrop';
 import { NamePrompt } from '../team/NamePrompt';
 import { TeamBar } from '../team/TeamBar';
+import { useT } from '../../i18n';
 
 /** The whiteboard ships in its own chunk, loaded the first time it opens. */
 const Whiteboard = lazy(() => import('../sketch/Whiteboard'));
@@ -67,6 +68,8 @@ export function BoardPage() {
   }, [skin]);
   useEffect(() => () => useThemeController.getState().setSkin('default'), []);
 
+  const t = useT();
+
   // Leaving the board (or switching to another) closes its whiteboard.
   useEffect(() => () => useSketch.getState().hide(), [boardId]);
 
@@ -83,7 +86,7 @@ export function BoardPage() {
           <div className="flex min-w-0 items-center gap-2">
             <InlineEdit
               value={board.name}
-              label="Nombre del tablero"
+              label={t('board.name')}
               onSave={(name) => renameBoard(board.id, name)}
               className="min-w-0 truncate font-pixel text-2xl"
             />
@@ -98,36 +101,32 @@ export function BoardPage() {
           {team && <TeamBar board={board} />}
           <Button size="sm" onClick={() => useSketch.getState().show(board.id, team)}>
             <PixelIcon name="sketch" />
-            Pizarra
+            {t('board.sketch')}
           </Button>
           <Button size="sm" onClick={() => setJourney(true)}>
             <PixelIcon name="route" />
-            Recorrido
+            {t('board.journey')}
           </Button>
           <Button size="sm" onClick={() => setConnections(true)}>
             <PixelIcon name="plug" />
-            Conexiones
+            {t('board.connections')}
           </Button>
           <ExportMenu board={board} />
           {/* Linked boards get their cards from GitHub, not from other boards. */}
           {!board.github && (
             <Button size="sm" onClick={() => setImporting(true)}>
               <PixelIcon name="import" />
-              Traer historias
+              {t('board.importCards')}
             </Button>
           )}
           <IconButton
             icon="archive"
-            label="Archivar tablero"
+            label={t('board.archive')}
             onClick={async () => {
               const ok = await confirm(
-                `¿Archivar el tablero "${board.name}"? Pasará a Archivados: solo podrás descargarlo en JSON o eliminarlo, ya no editarlo.` +
-                  (team
-                    ? ' Se archiva solo en este navegador; tu equipo lo conserva.'
-                    : board.github
-                      ? ' El Project sigue en GitHub; DuckBord deja de sincronizarlo.'
-                      : ''),
-                { confirmLabel: 'Archivar' },
+                t('board.archiveConfirm', { name: board.name }) +
+                  (team ? t('board.archiveTeam') : board.github ? t('board.archiveGithub') : ''),
+                { confirmLabel: t('common.archive') },
               );
               if (!ok) return;
               if (archiveBoard(board.id)) navigate('/', { replace: true });
@@ -136,15 +135,15 @@ export function BoardPage() {
           />
           <IconButton
             icon="trash"
-            label="Eliminar tablero"
+            label={t('board.delete')}
             onClick={async () => {
               const ok = await confirm(
                 team
-                  ? `¿Salir del tablero de equipo "${board.name}"? Se borra solo de este navegador; tu equipo lo conserva.`
+                  ? t('board.leaveTeam', { name: board.name })
                   : board.github
-                    ? `¿Quitar "${board.name}" de DuckBord? El Project y sus issues siguen en GitHub.`
-                    : `¿Eliminar el tablero "${board.name}"? No se puede deshacer.`,
-                { confirmLabel: 'Eliminar', danger: true },
+                    ? t('board.removeGithub', { name: board.name })
+                    : t('board.deleteConfirm', { name: board.name }),
+                { confirmLabel: t('common.delete'), danger: true },
               );
               if (!ok) return;
               await removeBoard(board);

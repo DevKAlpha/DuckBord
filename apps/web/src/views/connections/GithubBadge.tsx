@@ -6,13 +6,14 @@
 import type { GithubLink } from '@devbord/shared';
 import { PixelIcon } from '../../design';
 import { useGithub, type SyncState } from '../../controllers/githubController';
+import { useT, type MessageKey } from '../../i18n';
 
-const STATE: Record<SyncState, { label: string; color: string }> = {
-  off: { label: 'Sin sincronizar', color: 'var(--faint)' },
-  live: { label: 'Sincronizado con GitHub', color: 'var(--label-green-ink)' },
-  syncing: { label: 'Guardando en GitHub…', color: 'var(--accent)' },
-  offline: { label: 'Sin conexión con GitHub: reintentando', color: 'var(--faint)' },
-  error: { label: 'Error con GitHub', color: 'var(--label-red-ink)' },
+const STATE: Record<SyncState, { label: MessageKey; color: string }> = {
+  off: { label: 'github.sync.off', color: 'var(--faint)' },
+  live: { label: 'github.sync.live', color: 'var(--label-green-ink)' },
+  syncing: { label: 'github.sync.syncing', color: 'var(--accent)' },
+  offline: { label: 'github.sync.offline', color: 'var(--faint)' },
+  error: { label: 'github.error', color: 'var(--label-red-ink)' },
 };
 
 export function GithubBadge({ link }: { link: GithubLink }) {
@@ -20,14 +21,15 @@ export function GithubBadge({ link }: { link: GithubLink }) {
   const user = useGithub((s) => s.user);
   const error = useGithub((s) => s.error);
   const configured = useGithub((s) => s.configured);
+  const t = useT();
   const state = !configured || !user ? null : STATE[sync];
   const hint = !configured
-    ? 'GitHub no está configurado en esta instalación'
+    ? t('github.notConfigured')
     : !user
-      ? 'Conecta GitHub en Conexiones para sincronizar'
+      ? t('github.connectToSync')
       : sync === 'error' && error
-        ? `${state!.label}: ${error}`
-        : state!.label;
+        ? `${t(state!.label)}: ${error}`
+        : t(state!.label);
 
   return (
     <a
@@ -35,7 +37,7 @@ export function GithubBadge({ link }: { link: GithubLink }) {
       target="_blank"
       rel="noopener noreferrer"
       data-cursor-hint={hint}
-      aria-label={`Project de GitHub ${link.owner} #${link.number}. ${hint}`}
+      aria-label={t('github.badge', { owner: link.owner, number: link.number, hint })}
       className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs text-muted hover:text-ink"
     >
       <PixelIcon name="issue" size={12} />

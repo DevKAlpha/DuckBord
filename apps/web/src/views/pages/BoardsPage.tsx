@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { MAX_ACTIVE_BOARDS, MAX_ARCHIVED_BOARDS, PROFILE_INFO, type Board } from '@devbord/shared';
+import { MAX_ACTIVE_BOARDS, MAX_ARCHIVED_BOARDS, type Board } from '@devbord/shared';
 import { Badge, Button, IconButton, PixelIcon, confirm } from '../../design';
 import {
   activeBoards,
@@ -16,8 +16,9 @@ import { GithubProjectsModal } from '../connections/GithubProjectsModal';
 import { BathCaption, BathScene } from '../components/BathScene';
 import { SKINS } from '../../controllers/themeController';
 import { BoardFileError, parseBoardFile } from '../../models/boardFile';
+import { dateFormat, useT } from '../../i18n';
 
-const updatedFormat = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' });
+const updatedFormat = () => dateFormat({ day: 'numeric', month: 'short' });
 
 /** Home: grid of the user's boards plus a "new board" entry point. */
 export function BoardsPage() {
@@ -31,6 +32,7 @@ export function BoardsPage() {
   const [importError, setImportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const t = useT();
 
   return (
     <AppShell>
@@ -38,22 +40,22 @@ export function BoardsPage() {
       <BathScene />
       <header className="mx-auto flex w-full max-w-5xl flex-wrap items-end justify-between gap-4 px-4 pt-8 pb-6">
         <div>
-          <h1 className="text-3xl">Tus tableros</h1>
-          <p className="mt-1 text-muted">Todo lo que tienes entre manos, en un vistazo.</p>
+          <h1 className="text-3xl">{t('home.title')}</h1>
+          <p className="mt-1 text-muted">{t('home.subtitle')}</p>
           <BathCaption />
         </div>
         <div className="flex flex-wrap gap-2">
           <Button disabled={full} onClick={() => setFromGithub(true)}>
             <PixelIcon name="issue" />
-            Conectar Project de GitHub
+            {t('home.connectGithub')}
           </Button>
           <Button disabled={full} onClick={() => fileRef.current?.click()}>
             <PixelIcon name="upload" />
-            Importar JSON
+            {t('home.importJson')}
           </Button>
           <Button variant="primary" disabled={full} onClick={() => setCreating(true)}>
             <PixelIcon name="plus" />
-            Nuevo tablero
+            {t('newBoard.title')}
           </Button>
         </div>
         {/* Hidden picker behind "Importar JSON". */}
@@ -62,7 +64,7 @@ export function BoardsPage() {
           type="file"
           accept="application/json,.json"
           className="hidden"
-          aria-label="Archivo de tablero (JSON)"
+          aria-label={t('home.importFile')}
           onChange={async (e) => {
             const file = e.target.files?.[0];
             e.target.value = ''; // allow picking the same file again
@@ -76,15 +78,14 @@ export function BoardsPage() {
               setImportError(
                 err instanceof BoardFileError || err instanceof BoardLimitError
                   ? err.message
-                  : 'No se pudo importar el archivo.',
+                  : t('home.importError'),
               );
             }
           }}
         />
         {full && (
           <p role="status" className="w-full text-sm text-muted">
-            Tienes {MAX_ACTIVE_BOARDS} de {MAX_ACTIVE_BOARDS} tableros activos. Archiva o elimina
-            uno para crear, importar o conectar otro.
+            {t('home.full', { max: MAX_ACTIVE_BOARDS })}
           </p>
         )}
         {importError && (
@@ -107,7 +108,7 @@ export function BoardsPage() {
               {/* Personal and team boards are listed apart: they never mix. */}
               <h2 className="flex items-center gap-2 text-sm text-muted">
                 <PixelIcon name={mode === 'team' ? 'team' : 'board'} />
-                {mode === 'team' ? 'Tableros de equipo' : 'Tableros individuales'}
+                {mode === 'team' ? t('home.teamBoards') : t('home.personalBoards')}
               </h2>
               <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {list.map((b) => (
@@ -123,7 +124,7 @@ export function BoardsPage() {
             {/* Read-only boards: download (JSON) or delete, never opened for editing. */}
             <h2 className="flex items-center gap-2 text-sm text-muted">
               <PixelIcon name="archive" />
-              Archivados
+              {t('home.archived')}
               <span className="text-faint tabular-nums">
                 {archived.length}/{MAX_ARCHIVED_BOARDS}
               </span>
@@ -139,7 +140,7 @@ export function BoardsPage() {
         {active.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-16 text-center text-muted">
             <PixelIcon name="board" size={48} />
-            <p>Aún no tienes tableros. Crea el primero en segundos.</p>
+            <p>{t('home.empty')}</p>
           </div>
         )}
       </main>
@@ -157,6 +158,7 @@ export function BoardsPage() {
 /** One board in the home grid: mini preview, name, profile, activity and its look. */
 function BoardTile({ board: b }: { board: Board }) {
   const cards = b.columns.reduce((n, c) => n + c.cards.length, 0);
+  const t = useT();
   return (
     // Pixel-art frame like the board's cards: stepped corners and a hard shadow
     // painted behind (design/pixel.css); hover lifts the tile off its shadow.
@@ -194,10 +196,10 @@ function BoardTile({ board: b }: { board: Board }) {
         <h3 className="truncate text-lg">{b.name}</h3>
         <div className="mt-auto flex items-center justify-between text-xs text-muted">
           <Badge color={b.profile === 'technical' ? 'blue' : 'green'}>
-            {PROFILE_INFO[b.profile].title}
+            {t(`profile.${b.profile}.title`)}
           </Badge>
           <span>
-            {cards} tarjetas · {updatedFormat.format(new Date(b.updatedAt))}
+            {t.n('home.cards', cards)} · {updatedFormat().format(new Date(b.updatedAt))}
           </span>
         </div>
       </Link>
@@ -211,34 +213,37 @@ function BoardTile({ board: b }: { board: Board }) {
  */
 function ArchivedTile({ board: b }: { board: Board }) {
   const cards = b.columns.reduce((n, c) => n + c.cards.length, 0);
+  const t = useT();
   return (
     <li className="pixel-box flex flex-col gap-3 bg-surface-2 p-4">
       <div className="flex items-start gap-2">
         <h3 className="min-w-0 flex-1 truncate text-lg text-muted">{b.name}</h3>
         <IconButton
           icon="download"
-          label={`Descargar "${b.name}" en JSON`}
+          label={t('common.downloadJson', { name: b.name })}
           onClick={() => downloadBoardJson(b)}
         />
         <IconButton
           icon="trash"
-          label={`Eliminar "${b.name}"`}
+          label={t('common.deleteNamed', { name: b.name })}
           onClick={async () => {
-            const ok = await confirm(
-              `¿Eliminar el tablero archivado "${b.name}"? No se puede deshacer. Descárgalo antes si quieres conservarlo.`,
-              { confirmLabel: 'Eliminar', danger: true },
-            );
+            const ok = await confirm(t('home.deleteArchived', { name: b.name }), {
+              confirmLabel: t('common.delete'),
+              danger: true,
+            });
             if (ok) await removeBoard(b);
           }}
         />
       </div>
       <div className="mt-auto flex items-center justify-between text-xs text-muted">
         <Badge color={b.profile === 'technical' ? 'blue' : 'green'}>
-          {PROFILE_INFO[b.profile].title}
+          {t(`profile.${b.profile}.title`)}
         </Badge>
         <span>
-          {cards} tarjetas · archivado el{' '}
-          {updatedFormat.format(new Date(b.archivedAt ?? b.updatedAt))}
+          {t.n('home.cards', cards)} ·{' '}
+          {t('home.archivedOn', {
+            date: updatedFormat().format(new Date(b.archivedAt ?? b.updatedAt)),
+          })}
         </span>
       </div>
     </li>
@@ -250,6 +255,7 @@ function ArchivedTile({ board: b }: { board: Board }) {
  * chosen once, when the board is created.
  */
 function SkinChip({ board }: { board: Board }) {
+  const t = useT();
   return (
     <span className="pointer-events-none absolute top-6 right-6 z-10 inline-flex h-6 items-center gap-1 rounded-md border border-line-soft bg-surface/90 px-1.5 text-[11px] text-muted backdrop-blur">
       <span
@@ -257,7 +263,7 @@ function SkinChip({ board }: { board: Board }) {
         className="size-2 rounded-[2px]"
         style={{ background: SKINS[board.skin].swatch.accent }}
       />
-      {SKINS[board.skin].title}
+      {t(`skin.${board.skin}.title`)}
     </span>
   );
 }

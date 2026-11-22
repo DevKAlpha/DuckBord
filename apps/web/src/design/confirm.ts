@@ -9,7 +9,8 @@ import { create } from 'zustand';
 
 interface ConfirmRequest {
   message: string;
-  confirmLabel: string;
+  /** Undefined: the dialog shows "Aceptar" in the current language. */
+  confirmLabel?: string;
   danger: boolean;
   resolve: (ok: boolean) => void;
 }
@@ -19,7 +20,7 @@ export const useConfirmStore = create<{ request: ConfirmRequest | null }>(() => 
 }));
 
 export interface ConfirmOptions {
-  /** Text of the accept button. Default "Aceptar". */
+  /** Text of the accept button. Default "Aceptar" (translated). */
   confirmLabel?: string;
   /** Red accept button, for destructive actions. */
   danger?: boolean;
@@ -33,7 +34,7 @@ export function confirm(message: string, options: ConfirmOptions = {}): Promise<
     useConfirmStore.setState({
       request: {
         message,
-        confirmLabel: options.confirmLabel ?? 'Aceptar',
+        confirmLabel: options.confirmLabel,
         danger: options.danger ?? false,
         resolve,
       },

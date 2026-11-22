@@ -18,6 +18,7 @@ import { useThemeController } from '../../controllers/themeController';
 import { useCursorController } from '../../controllers/cursorController';
 import { DUCK_COLORS, DUCK_GRID, SKIN_HAT, hatRects, type DuckHat } from '../../design/duck';
 import { usePreferences } from '../../controllers/preferencesController';
+import { useT } from '../../i18n';
 import {
   Bath,
   MAX_DUCKS,
@@ -170,12 +171,13 @@ function useDucks() {
 /** One line for the page header: how many ducks are in the water. */
 export function BathCaption() {
   const count = useDucks().length;
+  const t = useT();
   const extra = Math.max(0, count - MAX_DUCKS);
   return (
     <p className="mt-1 text-sm text-faint">
-      <span className="text-muted tabular-nums">{count}</span> {count === 1 ? 'patito' : 'patitos'}{' '}
-      en la bañera, uno por persona o agente conectado
-      {extra > 0 ? ` (+${extra} esperando turno)` : ''}. El tuyo lleva la marca.
+      <span className="text-muted tabular-nums">{count}</span> {t.n('bath.ducks', count)}
+      {extra > 0 ? t('bath.waiting', { n: extra }) : ''}
+      {t('bath.yours')}
     </p>
   );
 }
