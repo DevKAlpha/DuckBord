@@ -33,6 +33,11 @@ export interface BoardTemplate {
    * The board still takes the style the person picked.
    */
   everyone?: boolean;
+  /**
+   * The board always takes `profile`, whatever style was picked. Picking the
+   * template switches the style picker to it, so what is shown is what is made.
+   */
+  lockedProfile?: boolean;
   /** Description pre-filled in every new card of the board. */
   cardTemplate?: string;
   /**
@@ -733,8 +738,10 @@ Consejos:
     // calendar (Conexiones). Editing is where the work piles up: WIP 2.
     id: 'content',
     profile: 'simple',
-    // Creators can be one person or a whole team with deadlines: both styles.
+    // Listed with both styles so it is easy to find, but always a Sencillo
+    // board: creators get no sprints, story points or dev jargon.
     everyone: true,
+    lockedProfile: true,
     name: 'Creadores de contenido',
     description:
       'De la idea al post publicado: guion, grabación, edición y fecha de publicación para cada plataforma.',
@@ -844,7 +851,7 @@ export function buildBoardFromTemplate(
 ): Board {
   let board = createBoard({
     name: options.name?.trim() || template.name,
-    profile: options.profile ?? template.profile,
+    profile: template.lockedProfile ? template.profile : (options.profile ?? template.profile),
     mode: options.mode,
     skin: options.skin,
     templateId: template.id,
