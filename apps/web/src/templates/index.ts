@@ -28,6 +28,11 @@ export interface BoardTemplate {
   /** One-line description per column, aligned with `columns`. */
   columnDescriptions?: string[];
   labels: { name: string; color: LabelColor }[];
+  /**
+   * Offered with both styles (Técnico and Sencillo), not only with `profile`.
+   * The board still takes the style the person picked.
+   */
+  everyone?: boolean;
   /** Description pre-filled in every new card of the board. */
   cardTemplate?: string;
   /**
@@ -728,6 +733,8 @@ Consejos:
     // calendar (Conexiones). Editing is where the work piles up: WIP 2.
     id: 'content',
     profile: 'simple',
+    // Creators can be one person or a whole team with deadlines: both styles.
+    everyone: true,
     name: 'Creadores de contenido',
     description:
       'De la idea al post publicado: guion, grabación, edición y fecha de publicación para cada plataforma.',
@@ -808,6 +815,7 @@ Consejos:
   {
     id: 'blank',
     profile: 'simple',
+    everyone: true,
     name: 'En blanco',
     description: 'Tres columnas vacías. Tú decides el resto.',
     columns: ['Por hacer', 'Haciendo', 'Hecho'],
@@ -817,11 +825,12 @@ Consejos:
 ];
 
 /**
- * Templates for a profile; the blank one suits everybody. Seasonal looks are
- * not templates: they are the "Tema" picked below the templates.
+ * Templates for a profile, plus those offered to everybody (content creators,
+ * blank). Seasonal looks are not templates: they are the "Tema" picked below
+ * the templates.
  */
 export const templatesFor = (profile: Profile) =>
-  TEMPLATES.filter((t) => t.profile === profile || t.id === 'blank');
+  TEMPLATES.filter((t) => t.profile === profile || t.everyone);
 
 export const getTemplate = (id: string) => TEMPLATES.find((t) => t.id === id);
 
