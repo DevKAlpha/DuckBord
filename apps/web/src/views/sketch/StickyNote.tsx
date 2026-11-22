@@ -12,19 +12,13 @@ import {
   NOTE_COLORS,
   NOTE_TEXT_MAX,
   SHEET,
+  TEXT_SIZES,
   type Note,
-  type NoteColor,
   type SketchModel,
 } from '../../controllers/sketchController';
 import { useCollab } from '../../controllers/collabController';
 import { PixelIcon, animateLand, animateOut, animateStick, cx } from '../../design';
-
-const COLOR_NAMES: Record<NoteColor, string> = {
-  yellow: 'amarillo',
-  pink: 'rosa',
-  blue: 'azul',
-  green: 'verde',
-};
+import { useT } from '../../i18n';
 
 /** Small, stable tilt per note (from its id): a wall of notes looks hand-placed. */
 function restingTilt(id: string) {
@@ -67,6 +61,7 @@ export const StickyNote = memo(function StickyNote({
   /** Text while the note has focus: remote echoes must not move the caret. */
   const [draft, setDraft] = useState<string | null>(null);
   const isText = note.kind === 'text';
+  const t = useT();
 
   useEffect(() => {
     if (fresh) animateStick(paperRef.current);
@@ -132,11 +127,14 @@ export const StickyNote = memo(function StickyNote({
           transform: `translate(${x}px, ${y}px) rotate(${tilt}deg)${drag ? ' scale(1.04)' : ''}`,
           zIndex: drag ? 9999 : note.z,
           '--editor-color': editor?.color,
+          // Free text: its own ink and size (style panel).
+          '--text-color': `var(--sk-${note.ink})`,
+          '--text-size': `${TEXT_SIZES[note.fontStep]}px`,
         } as CSSProperties
       }
       onPointerDown={() => model.raiseNote(note.id)}
     >
-      {editor && <span className="sk-editor-tag">{editor.name} escribe…</span>}
+      {editor && <span className="sk-editor-tag">{t('sketch.noteBy', { name: editor.name })}</span>}
       <div
         ref={paperRef}
         className="sk-paper"
@@ -145,8 +143,8 @@ export const StickyNote = memo(function StickyNote({
         <div
           className="sk-note-head"
           onPointerDown={startDrag}
-          aria-roledescription="nota movible"
-          data-cursor-hint="Arrastra para mover"
+          aria-roledescription={t('sketch.noteMove')}
+          data-cursor-hint={t('sketch.dragHint')}
         >
           {team && note.author && !isText && (
             <span className="flex min-w-0 items-center gap-1.5 text-lg opacity-70">
@@ -163,7 +161,7 @@ export const StickyNote = memo(function StickyNote({
                 <button
                   key={c}
                   type="button"
-                  aria-label={`Nota ${COLOR_NAMES[c]}`}
+                  aria-label={t(`sketch.note.${c}`)}
                   aria-pressed={note.color === c}
                   onClick={() => model.updateNote(note.id, { color: c })}
                   className={cx(
@@ -175,7 +173,7 @@ export const StickyNote = memo(function StickyNote({
               ))}
             <button
               type="button"
-              aria-label={isText ? 'Borrar texto' : 'Despegar nota'}
+              aria-label={isText ? t('sketch.removeText') : t('sketch.removeNote')}
               className="grid size-8 cursor-pointer place-items-center rounded opacity-60 hover:bg-black/10 hover:opacity-100"
               onClick={async () => {
                 await animateOut(paperRef.current);
@@ -188,8 +186,10 @@ export const StickyNote = memo(function StickyNote({
         </div>
         <textarea
           ref={textRef}
-          aria-label={isText ? 'Texto en la pizarra' : 'Texto de la nota'}
-          placeholder={isText ? 'Escribe…' : 'Escribe una observación…'}
+          aria-label={isText ? t('sketch.textAria') : t('sketch.noteAria')}
+          placeholder={isText ? t('sketch.textPlaceholder') : t('sketch.notePlaceholder')}
+          data-note-id={note.id}
+          data-note-kind={note.kind}
           maxLength={NOTE_TEXT_MAX}
           rows={isText ? 1 : undefined}
           value={draft ?? note.text}
