@@ -141,11 +141,12 @@ describe('IT help desk template', () => {
 describe('content creators template', () => {
   const board = buildBoardFromTemplate(getTemplate('content')!);
 
-  it('is offered with both styles, and the board keeps the picked one', () => {
+  it('is offered with both styles, but always builds a Sencillo board', () => {
     expect(templatesFor('technical').some((t) => t.id === 'content')).toBe(true);
     expect(templatesFor('simple').some((t) => t.id === 'content')).toBe(true);
+    // Never a technical board, even when picked from the Técnico list.
     expect(buildBoardFromTemplate(getTemplate('content')!, { profile: 'technical' }).profile).toBe(
-      'technical',
+      'simple',
     );
   });
 
