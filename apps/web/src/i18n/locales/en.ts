@@ -28,6 +28,12 @@ export const en: Messages = {
   'shell.themeDark': 'Dark theme',
   'shell.home': 'DuckBord, go home',
   'shell.language': 'Language',
+  'shell.spellOn': 'Turn on autocorrect',
+  'shell.spellOff': 'Turn off autocorrect',
+  'spell.aria': 'Spelling suggestion',
+  'spell.title': '"{word}" changes meaning with an accent:',
+  'spell.ignore': "Don't suggest this word again",
+  'spell.close': 'Close suggestion',
 
   // --- pickers ------------------------------------------------------------------
   'pickers.profile': 'Profile',

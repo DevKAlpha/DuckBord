@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router';
 import { IconButton } from '../../design';
 import { useMotion } from '../../controllers/motionController';
+import { useSpelling } from '../../controllers/spellingController';
 import { useThemeController } from '../../controllers/themeController';
 import { useT } from '../../i18n';
 import { LanguageMenu } from './LanguageMenu';
@@ -21,6 +22,26 @@ function MotionToggle() {
       label={lite ? t('shell.motionOn') : t('shell.motionOff')}
       aria-pressed={!lite}
       className={lite ? 'text-faint' : 'text-accent'}
+      onClick={toggle}
+    />
+  );
+}
+
+/**
+ * Autocorrect on or off (story 26). Not on touch-only devices: there the
+ * phone keyboard corrects, and DuckBord's own autocorrect stays off.
+ */
+function SpellToggle() {
+  const enabled = useSpelling((s) => s.enabled);
+  const toggle = useSpelling((s) => s.toggle);
+  const t = useT();
+  if (typeof matchMedia === 'function' && !matchMedia('(any-pointer: fine)').matches) return null;
+  return (
+    <IconButton
+      icon="spell"
+      label={enabled ? t('shell.spellOff') : t('shell.spellOn')}
+      aria-pressed={enabled}
+      className={enabled ? 'text-accent' : 'text-faint'}
       onClick={toggle}
     />
   );
@@ -61,6 +82,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </NavLink>
           <span className="flex-1" />
           <LanguageMenu />
+          <SpellToggle />
           <MotionToggle />
           <ThemeToggle />
         </div>

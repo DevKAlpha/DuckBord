@@ -20,6 +20,7 @@
  * design components can use it too.
  */
 import { create } from 'zustand';
+import { desktop } from '../models/desktop';
 import type { BoardTemplate } from '../templates/model';
 import { es, type MessageKey, type Messages } from './locales/es';
 import { TEMPLATES_ES } from '../templates/locales/es';
@@ -144,6 +145,8 @@ export const useLocale = create<LocaleState>((set, get) => ({
       /* storage blocked: the choice lasts for this visit */
     }
     document.documentElement.lang = locale;
+    // The desktop app follows: menus and spellchecker in the same language.
+    desktop?.setLocale(locale);
     if (get().locale === locale && get().messages === pack.messages) return;
     set({ locale, ...pack, t: makeTranslator(locale, pack.messages) });
   },

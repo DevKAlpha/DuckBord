@@ -1,0 +1,71 @@
+# Installers of the desktop app (story 27): Windows (.exe), macOS (.dmg) and
+# Linux (.AppImage, .deb). Each system builds its own installer.
+#
+# - A push that touches apps/desktop builds them as a check (artifacts kept 14 days).
+# - A tag v* (git tag v0.1.0 && git push origin v0.1.0) also publishes them
+#   in a GitHub Release, where people download DuckBord.
+name: Desktop installers
+
+on:
+  push:
+    branches-ignore: [main]
+    paths: ['apps/desktop/**', '.github/workflows/desktop.yml']
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        env:
+          # electron-builder brings its own Electron; the npm binary is only for 'npm start'.
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: npm test -w @devbord/desktop
+      # Web app for the desktop (served from the root of duckbord://app), then the installer.
+      - run: npm run dist -w @devbord/desktop 2>&1 | tee dist.log; exit ${PIPESTATUS[0]}
+        shell: bash
+        env:
+          # No certificates yet: unsigned on Windows, ad-hoc signed on macOS.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # The reason of a failure, as an annotation on the run summary.
+      - if: failure()
+        shell: bash
+        run: echo "::error title=Installer build failed::$(grep -E '⨯|rror' dist.log | tail -n 6 | tr '\n' ' ')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: duckbord-${{ runner.os }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+      - run: gh release create "$GITHUB_REF_NAME" installers/* --repo "$GITHUB_REPOSITORY" --title "DuckBord $GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -16,6 +16,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+        env:
+          # electron-builder brings its own Electron; the npm binary is only for 'npm start'.
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

@@ -6,6 +6,7 @@ import { watchMotion } from '../controllers/motionController';
 import { usePreferences } from '../controllers/preferencesController';
 import { ConfirmHost } from '../design';
 import { useT } from '../i18n';
+import { SpellAssist } from './components/SpellAssist';
 import { PixelCursor } from './cursor/PixelCursor';
 import { BoardPage } from './pages/BoardPage';
 import { BoardsPage } from './pages/BoardsPage';
@@ -48,6 +49,7 @@ export function App() {
   return (
     <HashRouter>
       <PixelCursor />
+      <SpellAssist />
       <ConfirmHost />
       {error && (
         <div role="alert" className="bg-danger px-4 py-2 text-center text-sm text-white">
