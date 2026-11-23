@@ -92,6 +92,8 @@ export interface Stroke {
   icon?: IconId;
   /** tool "step": the number in the circle. */
   label?: string;
+  /** Closed shapes: text written inside (centered, wrapped to the shape). */
+  text?: string;
 }
 
 /** Text sizes of free text on the board (sheet units). */

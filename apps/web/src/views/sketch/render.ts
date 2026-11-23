@@ -35,9 +35,40 @@ export interface Painted {
   ops: PaintOp[];
   /** The number of a step marker, drawn in paper color on the ink disc. */
   text?: { value: string; x: number; y: number; size: number };
+  /** Text written inside a shape, already wrapped, drawn in the ink color. */
+  label?: { lines: string[]; x: number; y: number; size: number };
 }
 
 const gen = new RoughGenerator();
+
+/** Font size of the text inside a shape: smaller shapes get smaller text. */
+export const labelSize = (h: number) => Math.round(Math.min(28, Math.max(14, h * 0.3)));
+
+/** How much of the shape's width the text may use (a diamond is narrow at the top). */
+export const labelWidth = (tool: Stroke['tool'], w: number) =>
+  w * (tool === 'diamond' ? 0.6 : tool === 'ellipse' ? 0.75 : 0.88);
+
+let measure: CanvasRenderingContext2D | null = null;
+
+/** Splits the text into lines that fit `width` (words are never cut). */
+function wrap(text: string, size: number, width: number): string[] {
+  measure ??= document.createElement('canvas').getContext('2d');
+  if (!measure) return text.split('\n');
+  measure.font = `${size}px ${HAND_FONT}`;
+  const lines: string[] = [];
+  for (const paragraph of text.split('\n')) {
+    let line = '';
+    for (const word of paragraph.split(' ')) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && measure.measureText(next).width > width) {
+        lines.push(line);
+        line = word;
+      } else line = next;
+    }
+    lines.push(line);
+  }
+  return lines;
+}
 
 // Marker strings: rough.js reports which color each path uses, which tells
 // the outline (OUT) apart from the hatching (IN) and from a solid fill.
@@ -243,7 +274,23 @@ export function paintOf(stroke: Stroke, done = true): Painted {
       ],
     };
   }
-  const { x, y, w, h } = boxOf(p);
+  const shape = closedShape(stroke, options);
+  if (stroke.text) {
+    const { x, y, w, h } = boxOf(p);
+    const size = labelSize(h);
+    shape.label = {
+      lines: wrap(stroke.text, size, labelWidth(stroke.tool, w)),
+      x: x + w / 2,
+      y: y + h / 2,
+      size,
+    };
+  }
+  return shape;
+}
+
+/** Rectangle, diamond or circle, with its hatching kept inside. */
+function closedShape(stroke: Stroke, options: Options): Painted {
+  const { x, y, w, h } = boxOf(stroke.points);
   // The exact shape, to keep the hatching inside it.
   const clip = new Path2D();
   if (stroke.tool === 'diamond') {
@@ -293,6 +340,16 @@ export function drawPainted(
     }
   }
   ctx.globalAlpha = 1;
+  const label = painted.label;
+  if (label) {
+    ctx.fillStyle = ink;
+    ctx.font = `${label.size}px ${HAND_FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lh = label.size * 1.25;
+    const top = label.y - ((label.lines.length - 1) * lh) / 2;
+    label.lines.forEach((line, i) => ctx.fillText(line, label.x, top + i * lh));
+  }
   const text = painted.text;
   if (text) {
     ctx.fillStyle = paper;

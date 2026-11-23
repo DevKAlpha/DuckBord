@@ -14,7 +14,9 @@
  * V seleccionar · P lápiz · M marcador · L línea · A flecha · R rectángulo ·
  * D rombo · O círculo · T texto · N nota · I iconos · S pasos · E borrador ·
  * K láser · [ ] grosor · Ctrl+Z / Ctrl+Shift+Z · Ctrl+A todo · Ctrl+D duplicar ·
- * Supr borrar selección · flechas mover · Esc suelta la selección y luego cierra.
+ * Supr borrar selección · flechas mover · Ctrl+C / Ctrl+X / Ctrl+V copiar, cortar y
+ * pegar (también texto) · Enter o doble clic escribe dentro de una forma ·
+ * Esc suelta la selección y luego cierra.
  *
  * Loaded lazily: none of this ships until the first time someone opens it.
  */
@@ -26,7 +28,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { useCollab } from '../../controllers/collabController';
-import { useSketch, useSketchSnapshot, type SketchTool } from '../../controllers/sketchController';
+import {
+  SHEET,
+  useSketch,
+  useSketchSnapshot,
+  type SketchTool,
+} from '../../controllers/sketchController';
 import {
   IconButton,
   PixelIcon,
@@ -41,7 +48,14 @@ import { useT, type MessageKey } from '../../i18n';
 import { SheetSwitcher } from './SheetSwitcher';
 import { SketchSheet, type SketchSheetHandle } from './SketchSheet';
 import { StylePanel } from './StylePanel';
-import { deleteSelection, duplicateSelection, nudgeSelection, selectAll } from './selectionActions';
+import {
+  copySelection,
+  deleteSelection,
+  duplicateSelection,
+  nudgeSelection,
+  pasteClip,
+  selectAll,
+} from './selectionActions';
 import './sketch.css';
 
 /**
@@ -122,6 +136,44 @@ export default function Whiteboard({ boardName, team }: { boardName: string; tea
     animateIn(dialog);
   }, []);
 
+  // Copy, cut and paste through the browser clipboard events: no permission
+  // prompt, and a copy can be pasted on another whiteboard, board or tab.
+  // Inside a text field they keep their normal meaning.
+  useEffect(() => {
+    const inField = (e: Event) =>
+      e.target instanceof Element &&
+      e.target.closest('textarea, input, select, [contenteditable="true"]') !== null;
+    const copy = (e: ClipboardEvent, cut: boolean) => {
+      if (inField(e)) return;
+      const data = copySelection();
+      if (!data) return;
+      e.preventDefault();
+      e.clipboardData?.setData('text/plain', data);
+      if (cut) deleteSelection();
+    };
+    const onCopy = (e: ClipboardEvent) => copy(e, false);
+    const onCut = (e: ClipboardEvent) => copy(e, true);
+    const onPaste = (e: ClipboardEvent) => {
+      if (inField(e) || !useSketch.getState().model) return;
+      const text = e.clipboardData?.getData('text/plain') ?? '';
+      if (!text.trim()) return;
+      e.preventDefault();
+      const at = sheetRef.current?.pointer() ?? null;
+      if (pasteClip(text, at)) return;
+      // Any other text becomes a free text on the sheet.
+      const p = at ?? { x: SHEET.width / 2 - 80, y: SHEET.height / 2 };
+      sheetRef.current?.placeNote('text', p.x, p.y, text.slice(0, 600));
+    };
+    document.addEventListener('copy', onCopy);
+    document.addEventListener('cut', onCut);
+    document.addEventListener('paste', onPaste);
+    return () => {
+      document.removeEventListener('copy', onCopy);
+      document.removeEventListener('cut', onCut);
+      document.removeEventListener('paste', onPaste);
+    };
+  }, []);
+
   // Keyboard shortcuts (never while typing in a note).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -159,6 +211,19 @@ export default function Whiteboard({ boardName, team }: { boardName: string; tea
         return;
       }
       if (mod || e.altKey) return;
+      if (e.key === 'Escape' && selection.length) {
+        // Handled here, not by the dialog: Chrome force-closes a dialog whose
+        // Esc was cancelled twice without the user doing anything in between.
+        e.preventDefault();
+        useSketch.getState().setSelection([]);
+        return;
+      }
+      if (e.key === 'Enter' && selection.length === 1) {
+        // Enter writes inside the selected shape (if it is one).
+        e.preventDefault();
+        sheetRef.current?.editLabel(selection[0]!);
+        return;
+      }
       if (selection.length) {
         if (e.key === 'Delete' || e.key === 'Backspace') {
           e.preventDefault();
@@ -228,6 +293,9 @@ export default function Whiteboard({ boardName, team }: { boardName: string; tea
           ? 'h-[calc(100dvh-16px)] w-[calc(100vw-16px)]'
           : 'h-[min(780px,calc(100dvh-32px))] w-[min(1280px,calc(100vw-32px))]',
       )}
+      // However it closes (Esc, or the browser closing it), the state follows,
+      // so the whiteboard can always be opened again.
+      onClose={() => useSketch.getState().hide()}
       onCancel={(e) => {
         // Esc: first leaves the note being written or drops the selection, then closes.
         e.preventDefault();

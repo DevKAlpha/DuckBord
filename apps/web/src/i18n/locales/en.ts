@@ -444,7 +444,9 @@ export const en: Messages = {
   'sketch.panel.selected_other': '{n} items selected',
   'sketch.panel.duplicate': 'Duplicate (Ctrl+D)',
   'sketch.panel.delete': 'Delete (Del)',
-  'sketch.panel.hintSelect': 'Click a drawing or drag a box to select. The corners resize it.',
+  'sketch.panel.hintSelect':
+    'Click a drawing or drag a box to select. The corners resize it. Double click a shape to write inside it.',
+  'sketch.labelAria': 'Text inside the shape',
   'sketch.panel.hintEraser': 'Move over a stroke to erase it. Right click erases too.',
   'sketch.panel.hintLaser': 'Point without drawing: the trail fades away by itself.',
   'sketch.color.ink': 'Ink',

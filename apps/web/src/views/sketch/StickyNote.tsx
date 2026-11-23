@@ -202,6 +202,13 @@ export const StickyNote = memo(function StickyNote({
             setDraft(e.target.value);
             model.updateNote(note.id, { text: e.target.value });
           }}
+          onKeyDown={(e) => {
+            // Esc only leaves the note (it must not reach the dialog and close it).
+            if (e.key !== 'Escape') return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.blur();
+          }}
           onBlur={(e) => {
             setDraft(null);
             if (team) useCollab.getState().setEditingNote(null);

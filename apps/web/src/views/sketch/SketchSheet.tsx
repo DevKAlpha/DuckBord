@@ -20,7 +20,8 @@
  * Gestures: left button uses the current tool; right button (or a pen's
  * eraser end) erases on the fly; Shift makes squares, circles and 45° lines.
  * Select tool: click or drag a box to select, drag to move, corners resize,
- * Shift adds to the selection.
+ * Shift adds to the selection. Double click (or the text tool, or Enter on a
+ * selected shape) writes inside a rectangle, diamond or circle.
  */
 import {
   useCallback,
@@ -39,6 +40,7 @@ import { useIdentity } from '../../controllers/identityController';
 import {
   ICON_SIZES,
   NOTE_SIZE,
+  NOTE_TEXT_MAX,
   SHEET,
   SIZE_STEPS,
   STEP_SIZES,
@@ -55,6 +57,7 @@ import { isMotionLite } from '../../design';
 import { useT } from '../../i18n';
 import { TintedArrow } from '../team/RemoteCursors';
 import {
+  boxOf,
   bounds,
   constrainEnd,
   contains,
@@ -66,20 +69,26 @@ import {
   scalePoints,
   smoothTowards,
   snap,
+  shapeAt,
   strokeAt,
   translatePoints,
   unionBounds,
   type Bounds,
 } from './geometry';
 import { IconGlyph } from './IconGlyph';
-import { drawPainted, laserPath, paintOf, type Painted } from './render';
+import { drawPainted, labelSize, labelWidth, laserPath, paintOf, type Painted } from './render';
 import { StickyNote } from './StickyNote';
 
 /** Imperative API for the dock (dropping a note dragged from the pad). */
 export interface SketchSheetHandle {
   /** Sheet coordinates of a screen point, or null when it is outside the sheet. */
   toSheet: (clientX: number, clientY: number) => { x: number; y: number } | null;
-  placeNote: (kind: Note['kind'], x: number, y: number) => void;
+  /** Places a note or a free text (pasted text arrives already written). */
+  placeNote: (kind: Note['kind'], x: number, y: number, text?: string) => void;
+  /** Opens the editor of the text inside a closed shape. */
+  editLabel: (id: string) => void;
+  /** Where the pointer is on the sheet (paste lands there), or null. */
+  pointer: () => { x: number; y: number } | null;
 }
 
 const ASPECT = SHEET.width / SHEET.height;
@@ -237,6 +246,12 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
   // Notes that exist when the sheet opens do not play the "stick" animation.
   const [known] = useState(() => new Set(model.getSnapshot().notes.map((n) => n.id)));
   const [focusId, setFocusId] = useState<string | null>(null);
+  /** Shape whose inside text is being written. */
+  const [editing, setEditing] = useState<string | null>(null);
+  const editingRef = useRef(editing);
+  editingRef.current = editing;
+  /** Last pointer position over the sheet (paste lands there). */
+  const pointerRef = useRef<{ x: number; y: number } | null>(null);
 
   // --- fit the 16:10 sheet into the available space ---------------------------
   useLayoutEffect(() => {
@@ -307,6 +322,8 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
         look = paintOf(stroke);
         painted.current.set(stroke, look);
       }
+      // The text being written shows in its editor, not twice.
+      if (stroke.id === editingRef.current) look = { ...look, label: undefined };
       drawPainted(ctx, look, palette[stroke.color], palette.paper);
     }
     if (current && (current.begun || isFreehand(current.stroke.tool))) {
@@ -417,7 +434,11 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
 
   // Step numbers are drawn in the hand-written font: repaint once it arrives.
   useEffect(() => {
-    void document.fonts?.load('600 40px "Shantell Sans"').then(() => requestPaint());
+    void document.fonts?.load('600 40px "Shantell Sans"').then(() => {
+      // Text inside shapes was wrapped with the fallback font: measure it again.
+      painted.current = new WeakMap();
+      requestPaint();
+    });
   }, [requestPaint]);
 
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
@@ -461,7 +482,9 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
 
   // --- notes -----------------------------------------------------------------
   const placeNote = useCallback(
-    (kind: Note['kind'], x: number, y: number) => {
+    (kind: Note['kind'], x: number, y: number, text = '') => {
+      // A hidden sheet has no size: its coordinates mean nothing.
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
       const { name, color: authorColor } = useIdentity.getState();
       const { noteColor: paper, color: ink, sizeStep: step } = useSketch.getState();
       const id = newId();
@@ -481,14 +504,14 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
             ),
           ),
         ),
-        text: '',
+        text,
         color: paper,
         ink: kind === 'text' ? ink : 'ink',
         fontStep: kind === 'text' ? step : 1,
         author: team ? name || t('common.guest') : null,
         authorColor: team ? authorColor : null,
       });
-      setFocusId(id);
+      if (!text) setFocusId(id);
     },
     [model, team, t],
   );
@@ -503,7 +526,22 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
     };
   }, []);
 
-  useImperativeHandle(ref, () => ({ toSheet, placeNote }), [toSheet, placeNote]);
+  const editLabel = useCallback(
+    (id: string) => {
+      const shape = strokesRef.current.find((s) => s.id === id);
+      if (!shape || !isClosed(shape.tool)) return;
+      model.stopCapturing();
+      setEditing(id);
+      requestPaint();
+    },
+    [model, requestPaint],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({ toSheet, placeNote, editLabel, pointer: () => pointerRef.current }),
+    [toSheet, placeNote, editLabel],
+  );
 
   // --- pointer input -----------------------------------------------------------
   const pointOf = (e: { clientX: number; clientY: number }) => {
@@ -672,6 +710,12 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
       eraseAt(p);
       return;
     }
+    // The text tool writes inside a shape when it clicks one.
+    const shape = tool === 'text' ? shapeAt(strokesRef.current, p.x, p.y) : null;
+    if (shape) {
+      editLabel(shape.id);
+      return;
+    }
     if (tool === 'note' || tool === 'text') {
       placeNote(tool, p.x, p.y);
       return;
@@ -708,6 +752,7 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
   const onPointerMove = (e: PointerEvent<HTMLCanvasElement>) => {
     const p = pointOf(e);
     moveBrush(p);
+    pointerRef.current = p;
     if (team)
       useCollab
         .getState()
@@ -817,6 +862,7 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
 
   const onPointerLeave = () => {
     moveBrush(null);
+    pointerRef.current = null;
     if (team) useCollab.getState().setPen(null);
   };
 
@@ -881,6 +927,14 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
           onPointerCancel={finish}
           onPointerLeave={onPointerLeave}
           onContextMenu={(e) => e.preventDefault()}
+          onDoubleClick={(e) => {
+            if (tool !== 'select') return;
+            // Double click: write inside a shape, or a free text on the paper.
+            const p = pointOf(e);
+            const shape = shapeAt(strokesRef.current, p.x, p.y);
+            if (shape) editLabel(shape.id);
+            else placeNote('text', p.x, p.y);
+          }}
         />
         {brushKind !== 'select' && (
           <div
@@ -906,6 +960,21 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
           className="sk-layer"
           style={{ width: SHEET.width, height: SHEET.height, transform: `scale(${scale})` }}
         >
+          {editing &&
+            (() => {
+              const shape = snapshot.strokes.find((s) => s.id === editing);
+              return shape ? (
+                <LabelEditor
+                  key={shape.id}
+                  stroke={shape}
+                  model={model}
+                  onDone={() => {
+                    setEditing(null);
+                    requestPaint();
+                  }}
+                />
+              ) : null;
+            })()}
           {snapshot.notes.map((note) => (
             <StickyNote
               key={note.id}
@@ -946,6 +1015,60 @@ export function SketchSheet({ model, team, ref }: SketchSheetProps) {
             )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Writes the text inside a shape, in place: same font, size and wrap width as
+ * the canvas draws it. Saved as you type (live for the team); one undo step.
+ * Esc, Ctrl+Enter or a click elsewhere finishes.
+ */
+function LabelEditor({
+  stroke,
+  model,
+  onDone,
+}: {
+  stroke: Stroke;
+  model: SketchModel;
+  onDone: () => void;
+}) {
+  const t = useT();
+  const [draft, setDraft] = useState(stroke.text ?? '');
+  const { x, y, w, h } = boxOf(stroke.points);
+  return (
+    <div
+      className="sk-label"
+      style={{ transform: `translate(${x}px, ${y}px)`, width: w, height: h }}
+    >
+      <textarea
+        autoFocus
+        aria-label={t('sketch.labelAria')}
+        placeholder={t('sketch.textPlaceholder')}
+        maxLength={NOTE_TEXT_MAX}
+        value={draft}
+        style={{
+          fontSize: labelSize(h),
+          maxWidth: labelWidth(stroke.tool, w),
+          color: `var(--sk-${stroke.color})`,
+        }}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          model.setStrokeText(stroke.id, e.target.value);
+        }}
+        onKeyDown={(e) => {
+          // Esc only finishes the text (it must not reach the dialog and close it).
+          if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.blur();
+          }
+        }}
+        onBlur={() => {
+          model.stopCapturing();
+          onDone();
+        }}
+      />
     </div>
   );
 }
