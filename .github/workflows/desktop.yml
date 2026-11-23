@@ -35,10 +35,15 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
       - run: npm test -w @devbord/desktop
       # Web app for the desktop (served from the root of duckbord://app), then the installer.
-      - run: npm run dist -w @devbord/desktop
+      - run: npm run dist -w @devbord/desktop 2>&1 | tee dist.log; exit ${PIPESTATUS[0]}
+        shell: bash
         env:
           # No certificates yet: unsigned on Windows, ad-hoc signed on macOS.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # The reason of a failure, as an annotation on the run summary.
+      - if: failure()
+        shell: bash
+        run: echo "::error title=Installer build failed::$(grep -E '⨯|rror' dist.log | tail -n 6 | tr '\n' ' ')"
       - uses: actions/upload-artifact@v4
         with:
           name: duckbord-${{ runner.os }}

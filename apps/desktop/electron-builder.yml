@@ -54,9 +54,13 @@ linux:
   icon: resources/icon.png
   maintainer: DevKAlpha
   synopsis: Tableros Kanban para equipos técnicos y no técnicos
+  # On Linux the name comes from package.json (@devbord/desktop), which is not
+  # a valid program or package name there.
+  executableName: duckbord
 appImage:
   artifactName: DuckBord-${version}-Linux-${arch}.${ext}
 deb:
+  packageName: duckbord
   artifactName: DuckBord-${version}-Linux-${arch}.${ext}
 
 publish: null
