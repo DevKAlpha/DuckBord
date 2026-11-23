@@ -443,7 +443,8 @@ export const ko: Messages = {
   'sketch.panel.duplicate': '복제 (Ctrl+D)',
   'sketch.panel.delete': '삭제 (Del)',
   'sketch.panel.hintSelect':
-    '그림을 클릭하거나 상자를 끌어서 선택하세요. 모서리로 크기를 바꿉니다.',
+    '그림을 클릭하거나 상자를 끌어서 선택하세요. 모서리로 크기를 바꿉니다. 도형을 더블 클릭하면 안에 글을 쓸 수 있어요.',
+  'sketch.labelAria': '도형 안의 텍스트',
   'sketch.panel.hintEraser': '선 위를 지나가면 지워져요. 오른쪽 클릭으로도 지울 수 있어요.',
   'sketch.panel.hintLaser': '그리지 않고 가리켜요. 자국은 저절로 사라져요.',
   'sketch.color.ink': '잉크',

@@ -450,7 +450,8 @@ export const es = {
   'sketch.panel.duplicate': 'Duplicar (Ctrl+D)',
   'sketch.panel.delete': 'Eliminar (Supr)',
   'sketch.panel.hintSelect':
-    'Haz clic en un dibujo o arrastra un recuadro para seleccionar. Las esquinas cambian el tamaño.',
+    'Haz clic en un dibujo o arrastra un recuadro para seleccionar. Las esquinas cambian el tamaño. Doble clic en una forma para escribir dentro.',
+  'sketch.labelAria': 'Texto dentro de la forma',
   'sketch.panel.hintEraser': 'Pasa por encima de un trazo para borrarlo. También con clic derecho.',
   'sketch.panel.hintLaser': 'Señala sin dibujar: el rastro se desvanece solo.',
   'sketch.color.ink': 'Tinta',

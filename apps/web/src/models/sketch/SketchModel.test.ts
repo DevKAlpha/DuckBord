@@ -178,6 +178,20 @@ describe('SketchModel', () => {
     expect(m.getSnapshot().strokes[0]!.points).toEqual([0, 0, 10, 10]);
   });
 
+  it('writes text inside a shape as one undo step, live for teammates', () => {
+    const { a, b } = twoPeers();
+    a.beginStroke({ ...pen('box', [0, 0, 100, 60]), tool: 'rect' });
+    a.endStroke('box');
+    a.stopCapturing();
+    a.setStrokeText('box', 'A');
+    a.setStrokeText('box', 'AP');
+    a.setStrokeText('box', 'API');
+    a.stopCapturing();
+    expect(b.getSnapshot().strokes[0]!.text).toBe('API');
+    a.undo();
+    expect(a.getSnapshot().strokes[0]!.text).toBeUndefined();
+  });
+
   it('keeps the color and size of free text', () => {
     const m = new SketchModel(new Y.Doc());
     m.addNote({ ...note('t'), kind: 'text', ink: 'purple', fontStep: 2 });

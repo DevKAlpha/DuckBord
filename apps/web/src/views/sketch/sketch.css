@@ -310,6 +310,34 @@
   color: var(--faint);
 }
 
+/* Text written inside a shape (sheet units, in the scaled layer). */
+.sk-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+.sk-label textarea {
+  min-width: 3ch;
+  padding: 0;
+  border: 0;
+  outline: 1.5px dashed var(--faint);
+  outline-offset: 6px;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--sk-hand);
+  line-height: 1.25;
+  text-align: center;
+  field-sizing: content;
+}
+.sk-label textarea::placeholder {
+  color: var(--faint);
+}
+
 /* Teammates' pens on the sheet. */
 .sk-peer {
   position: absolute;

@@ -76,6 +76,7 @@ function readStroke(map: Y.Map<unknown>): Stroke | null {
   const rough = map.get('rough');
   const icon = map.get('icon');
   const label = map.get('label');
+  const text = map.get('text');
   const seed = num(map.get('seed'));
   return {
     id,
@@ -90,6 +91,7 @@ function readStroke(map: Y.Map<unknown>): Stroke | null {
     seed: seed >= 1 ? Math.floor(seed) : seedOf(id),
     ...(isOneOf(ICON_IDS, icon) ? { icon } : {}),
     ...(typeof label === 'string' ? { label: label.slice(0, 4) } : {}),
+    ...(typeof text === 'string' && text ? { text: text.slice(0, NOTE_TEXT_MAX) } : {}),
   };
 }
 
@@ -106,6 +108,7 @@ function strokeMap(stroke: Stroke): Y.Map<unknown> {
   map.set('seed', stroke.seed);
   if (stroke.icon) map.set('icon', stroke.icon);
   if (stroke.label !== undefined) map.set('label', stroke.label);
+  if (stroke.text) map.set('text', stroke.text);
   const points = new Y.Array<number>();
   points.push([...stroke.points]);
   map.set('points', points);
@@ -282,6 +285,22 @@ export class SketchModel {
   }
 
   /** Changes color, width or style of several strokes at once: one undo step. */
+  /**
+   * Writes the text inside a shape. Called on every keystroke so teammates
+   * see it live; the editor calls stopCapturing() when it opens and closes,
+   * so the whole edit is one undo step.
+   */
+  setStrokeText(id: string, text: string) {
+    const next = text.slice(0, NOTE_TEXT_MAX);
+    this.doc.transact(() => {
+      this.strokesArr.forEach((map) => {
+        if (map.get('id') !== id || (map.get('text') ?? '') === next) return;
+        if (next) map.set('text', next);
+        else map.delete('text');
+      });
+    }, ORIGIN);
+  }
+
   restyleStrokes(ids: ReadonlySet<string>, style: StrokeStyle) {
     const entries = Object.entries(style).filter(([, v]) => v !== undefined);
     if (ids.size === 0 || entries.length === 0) return;

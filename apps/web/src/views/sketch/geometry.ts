@@ -127,7 +127,12 @@ function segmentDistance(px: number, py: number, ax: number, ay: number, bx: num
 
 /** True when (x, y) is inside the area of a filled shape, an icon or a step. */
 function insideArea(stroke: Stroke, x: number, y: number) {
-  const solid = stroke.tool === 'icon' || stroke.tool === 'step' || stroke.fill !== 'none';
+  // A shape with text inside is picked anywhere: the text belongs to it.
+  const solid =
+    stroke.tool === 'icon' ||
+    stroke.tool === 'step' ||
+    stroke.fill !== 'none' ||
+    Boolean(stroke.text);
   if (!isBox(stroke.tool) || !solid) return false;
   const b = boxOf(stroke.points);
   if (b.w === 0 || b.h === 0) return false;
@@ -173,6 +178,15 @@ export function bounds(stroke: Stroke): Bounds {
   }
   const pad = paintedWidth(stroke) / 2;
   return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+}
+
+/** Topmost closed shape (rectangle, diamond, circle) whose inside holds the point. */
+export function shapeAt(strokes: readonly Stroke[], x: number, y: number) {
+  for (let i = strokes.length - 1; i >= 0; i--) {
+    const s = strokes[i]!;
+    if (isClosed(s.tool) && insideArea({ ...s, fill: 'solid' }, x, y)) return s;
+  }
+  return null;
 }
 
 /** Box around several strokes, or null for none. */
