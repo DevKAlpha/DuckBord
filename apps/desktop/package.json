@@ -1,0 +1,24 @@
+{
+  "name": "@devbord/desktop",
+  "productName": "DuckBord",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DuckBord para escritorio (Windows, macOS y Linux): la app web dentro de Electron, con los tableros guardados en SQLite en el equipo.",
+  "author": "DevKAlpha",
+  "homepage": "https://devkalpha.github.io/DuckBord/",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "esbuild src/main.ts src/preload.ts --bundle --platform=node --target=node22 --format=cjs --external:electron --sourcemap --outdir=dist",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "web": "npm run build -w @devbord/web -- --outDir ../desktop/web --emptyOutDir",
+    "start": "npm run web && npm run build && electron .",
+    "dist": "npm run web && npm run build && electron-builder --publish never"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "electron": "45.4.1",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2"
+  }
+}

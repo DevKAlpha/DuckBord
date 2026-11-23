@@ -8,7 +8,15 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', '**/node_modules/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/node_modules/**',
+      'apps/desktop/web/**',
+      'apps/desktop/release/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -27,7 +35,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/**/*.ts', '**/*.config.{js,ts}'],
+    files: ['apps/api/**/*.ts', 'apps/desktop/**/*.ts', '**/*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
   },
   prettier,

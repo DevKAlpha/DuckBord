@@ -10,6 +10,7 @@ COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
 COPY apps/api/package.json apps/api/
+COPY apps/desktop/package.json apps/desktop/
 RUN npm ci --workspace @devbord/web --include-workspace-root
 
 COPY tsconfig.base.json ./

@@ -23,6 +23,7 @@ DuckBord es una app de tableros Kanban (tipo Trello o Jira) para usuarios **téc
 ```
 apps/web        React SPA (Vite). Se publica en GitHub Pages.
 apps/api        Node + Express. Corre en Docker/Dokploy, no en Pages.
+apps/desktop    App de escritorio (Electron): la misma web con tableros en SQLite local.
 packages/shared Tipos + schemas zod compartidos (fuente única del modelo de dominio).
 docker/         Dockerfiles. docker-compose.yml en la raíz.
 ```
@@ -42,6 +43,7 @@ docker/         Dockerfiles. docker-compose.yml en la raíz.
 - **Estanque de patitos** (inicio): `views/components/DuckPond` + `pondPhysics` (agua con ondas y patitos que chocan). Un patito por persona o agente en línea: `controllers/lobbyController` entra en una sala pública del mismo transporte P2P y solo anuncia `kind` (user/agent), nunca nombres ni datos.
 - `views/team/`: presencia (avatares, estado, Invitar), cursores remotos y petición de nombre.
 - `views/sketch/` + `models/sketch/` + `controllers/sketchController.ts`: **pizarra** superpuesta al tablero (trazos, formas, texto y notas adhesivas). Vive en un documento Yjs: local para tableros individuales (`docStore`, clave `sketch:<id>`) y dentro del documento de colaboración para los de equipo, así se sincroniza en vivo por la misma sesión. Deshacer con `Y.UndoManager` (solo lo propio). Se carga bajo demanda. Aspecto de Excalidraw (historia 24): los trazos se dibujan a mano (`views/sketch/render.ts`: rough.js para formas, iconos y pasos, con una semilla por trazo para que se vean igual en todas las pantallas; perfect-freehand para lápiz y marcador), papel de puntos y texto con fuente a mano (Shantell Sans, Gaegu para coreano, se pide al abrir la pizarra). Herramientas: seleccionar (mover, redimensionar por las esquinas, cambiar estilo, duplicar, borrar), lápiz, marcador, línea, flecha, rectángulo, rombo, círculo, texto, nota, iconos propios de DuckBord (`views/sketch/icons.ts`), pasos numerados, borrador y láser. Panel de estilo (`StylePanel`): color, grosor, línea, trazo a mano y relleno; con selección cambia lo seleccionado. Atajos como Excalidraw (V, P, L, A, R, D, O, T, K…). Los tableros individuales tienen **varias pizarras** (`SketchBook`, lista en `sketch.sheets` del mismo documento) con selector; los de equipo comparten **una sola** pizarra a propósito (sin selector, para no desorientar al equipo). En equipo, la presencia lleva el puntero de la pizarra (`pen`, con `laser`) y la nota que cada uno edita (`editingNote`).
+- **Escritorio** (historia 27, `apps/desktop`, guía en `docs/escritorio.md`): Electron carga la web compilada (`npm run web -w @devbord/desktop` la copia a `apps/desktop/web`) desde el esquema propio `duckbord://app` (origen real: localStorage, módulos y fetch funcionan como en la web). El preload expone `window.duckbord` (`DesktopBridge` en shared): `models/desktop.ts` lo detecta, y entonces `DesktopBoardRepository` y `docStore` guardan en SQLite (`apps/desktop/src/store.ts`, `node:sqlite`, sin módulos nativos; migraciones con `PRAGMA user_version`, solo se añaden pasos). Datos en la carpeta del usuario (`%APPDATA%DuckBord`), nunca en la del programa. Registro de errores en `logs/duckbord.log` (`src/log.ts`: errores del proceso principal, de la base, de la página con su stack y avisos de consola; rota al pasar 1 MB). Menús y corrector nativo siguen el idioma de la web (`setLocale`). Ventana con `contextIsolation` + `sandbox`; los enlaces se abren en el navegador. Instalador de Windows por defecto en `Program Files (x86)DuckBord` (`resources/installer.nsh`), por pedido del usuario. Electron va fijado a una versión exacta (electron-builder lo exige). Instaladores de los 3 sistemas con `.github/workflows/desktop.yml`; una etiqueta `v*` los publica en GitHub Releases.
 - Tableros **individuales** y **de equipo** se eligen al crear (`Board.mode`) y nunca se mezclan: se listan por separado.
 
 ### MVC en `apps/api/src`
@@ -74,6 +76,7 @@ docker/         Dockerfiles. docker-compose.yml en la raíz.
   | `area/sketch` | `views/sketch`, `models/sketch`, `controllers/sketchController`: pizarra y notas adhesivas |
   | `area/integrations` | `integrations/`, `controllers/connections*`, `views/connections`: Google, Microsoft, Slack |
   | `area/api` | `apps/api` (incluye el módulo GitHub `apps/api/src/github`) |
+  | `area/desktop` | `apps/desktop`, `models/desktop.ts`, `models/repositories/DesktopBoardRepository.ts`: app de escritorio e instaladores |
   | `area/infra` | Docker, CI/CD, configuración, documentación |
 - Un cambio que toca varias áreas va en la rama del área principal y se menciona en el commit.
 - Flujo: `area/*` (push directo) → merge `--no-ff` a **`develop`** (integración; el CI corre en cada push) → **`main` = producción**.
@@ -100,6 +103,8 @@ npm run dev:api    # api en http://localhost:3000
 npm run lint && npm run typecheck && npm test
 npm run build
 docker compose up --build   # web :8080, api :3000
+npm run start -w @devbord/desktop   # app de escritorio (Electron)
+npm run dist -w @devbord/desktop    # instalador del sistema actual (apps/desktop/release)
 ```
 
 ## Skills / MCP en uso
