@@ -3,6 +3,7 @@ import type { Board } from '@devbord/shared';
 import { Button, Field, Modal, Select } from '../../design';
 import { useBoardController } from '../../controllers/boardController';
 import { previewText } from './cardMeta';
+import { useT } from '../../i18n';
 
 export interface ImportCardsModalProps {
   open: boolean;
@@ -16,8 +17,9 @@ export interface ImportCardsModalProps {
  * template) and copy or move them into a column of this board.
  */
 export function ImportCardsModal({ open, board, onClose }: ImportCardsModalProps) {
+  const t = useT();
   return (
-    <Modal open={open} title="Traer historias de otro tablero" onClose={onClose}>
+    <Modal open={open} title={t('import.title')} onClose={onClose}>
       {/* Remount on every open: a fresh selection each time. */}
       {open && <ImportForm board={board} onClose={onClose} />}
     </Modal>
@@ -34,6 +36,7 @@ function ImportForm({ board, onClose }: Omit<ImportCardsModalProps, 'open'>) {
   const [columnId, setColumnId] = useState(board.columns[0]?.id ?? '');
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [move, setMove] = useState(false);
+  const t = useT();
 
   const source = others.find((b) => b.id === sourceId);
   const sourceCards = source?.columns.flatMap((c) => c.cards) ?? [];
@@ -41,11 +44,9 @@ function ImportForm({ board, onClose }: Omit<ImportCardsModalProps, 'open'>) {
   if (others.length === 0) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-muted">
-          Solo tienes este tablero. Crea otro para poder traer historias desde él.
-        </p>
+        <p className="text-muted">{t('import.onlyBoard')}</p>
         <Button className="self-end" onClick={onClose}>
-          Cerrar
+          {t('common.close')}
         </Button>
       </div>
     );
@@ -77,7 +78,7 @@ function ImportForm({ board, onClose }: Omit<ImportCardsModalProps, 'open'>) {
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Desde el tablero" htmlFor="import-source">
+        <Field label={t('import.from')} htmlFor="import-source">
           <Select
             id="import-source"
             value={sourceId}
@@ -93,7 +94,7 @@ function ImportForm({ board, onClose }: Omit<ImportCardsModalProps, 'open'>) {
             ))}
           </Select>
         </Field>
-        <Field label="A la columna" htmlFor="import-column">
+        <Field label={t('import.to')} htmlFor="import-column">
           <Select id="import-column" value={columnId} onChange={(e) => setColumnId(e.target.value)}>
             {board.columns.map((c) => (
               <option key={c.id} value={c.id}>
@@ -108,7 +109,7 @@ function ImportForm({ board, onClose }: Omit<ImportCardsModalProps, 'open'>) {
       <fieldset className="flex min-w-0 flex-col gap-2">
         <div className="flex items-center justify-between">
           <legend className="text-xs font-semibold tracking-wide text-muted uppercase">
-            Historias ({selected.size}/{sourceCards.length})
+            {t('import.stories', { n: selected.size, total: sourceCards.length })}
           </legend>
           {sourceCards.length > 0 && (
             <button
@@ -118,14 +119,14 @@ function ImportForm({ board, onClose }: Omit<ImportCardsModalProps, 'open'>) {
                 setSelected(allSelected ? new Set() : new Set(sourceCards.map((c) => c.id)))
               }
             >
-              {allSelected ? 'Quitar selección' : 'Seleccionar todas'}
+              {allSelected ? t('import.clear') : t('import.selectAll')}
             </button>
           )}
         </div>
 
         {sourceCards.length === 0 ? (
           <p className="rounded-lg bg-surface-2 p-4 text-center text-sm text-muted">
-            Este tablero no tiene tarjetas.
+            {t('import.empty')}
           </p>
         ) : (
           <div className="flex max-h-72 flex-col gap-3 overflow-y-auto rounded-lg bg-surface-2 p-2">
@@ -168,14 +169,13 @@ function ImportForm({ board, onClose }: Omit<ImportCardsModalProps, 'open'>) {
           checked={move}
           onChange={(e) => setMove(e.target.checked)}
         />
-        Mover (quitarlas del tablero de origen)
+        {t('import.moveOption')}
       </label>
 
       <footer className="flex justify-end gap-2">
-        <Button onClick={onClose}>Cancelar</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button type="submit" variant="primary" disabled={selected.size === 0}>
-          {move ? 'Mover' : 'Traer'} {selected.size || ''}{' '}
-          {selected.size === 1 ? 'historia' : 'historias'}
+          {t.n(move ? 'import.move' : 'import.bring', selected.size)}
         </Button>
       </footer>
     </form>

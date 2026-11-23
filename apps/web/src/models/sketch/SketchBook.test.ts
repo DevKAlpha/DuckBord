@@ -16,6 +16,10 @@ describe('SketchBook', () => {
       color: 'ink',
       size: 4,
       points: [0, 0],
+      fill: 'none',
+      dash: 'solid',
+      rough: 1,
+      seed: 1,
     });
     const book = new SketchBook(doc, ids);
     expect(book.getSheets().map((s) => s.id)).toEqual([MAIN_SHEET]);
@@ -32,6 +36,10 @@ describe('SketchBook', () => {
       color: 'ink',
       size: 4,
       points: [0, 0],
+      fill: 'none',
+      dash: 'solid',
+      rough: 1,
+      seed: 1,
     });
     expect(new SketchModel(doc, MAIN_SHEET).getSnapshot().strokes).toHaveLength(0);
     expect(new SketchModel(doc, second).getSnapshot().strokes).toHaveLength(1);
@@ -52,6 +60,8 @@ describe('SketchBook', () => {
       y: 0,
       text: 'x',
       color: 'yellow',
+      ink: 'ink',
+      fontStep: 1,
       author: null,
       authorColor: null,
     });

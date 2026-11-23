@@ -14,9 +14,8 @@ import { SKIN_HAT, duckFaviconUri } from '../design';
 
 export type ThemeBase = 'light' | 'dark';
 
+/** Skin names and descriptions are texts: `skin.<id>.title` in i18n. */
 export interface SkinInfo {
-  title: string;
-  description: string;
   /** Color base the skin is drawn on. */
   base: ThemeBase;
   /** Colors for previews (pickers, board tiles): page, column, card, accent. */
@@ -26,20 +25,14 @@ export interface SkinInfo {
 /** Skin catalog: what the pickers show and the color base each skin is drawn on. */
 export const SKINS: Record<BoardSkin, SkinInfo> = {
   default: {
-    title: 'DuckBord',
-    description: 'El aspecto de siempre: sobrio, claro u oscuro.',
     base: 'dark',
     swatch: { bg: '#161618', column: '#1c1c1f', card: '#2a2a2e', accent: '#7d7aff' },
   },
   halloween: {
-    title: 'Halloween',
-    description: 'Noche morada, murciélagos, telarañas y sombrero de bruja.',
     base: 'dark',
     swatch: { bg: '#1b0f2a', column: '#241536', card: '#3a2452', accent: '#ff7a1a' },
   },
   christmas: {
-    title: 'Navidad',
-    description: 'Nieve, luces de colores, bastones de caramelo y gorro rojo.',
     base: 'light',
     swatch: { bg: '#dcebf3', column: '#eef4ec', card: '#ffffff', accent: '#d62839' },
   },

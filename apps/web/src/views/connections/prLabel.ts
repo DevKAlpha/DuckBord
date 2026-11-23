@@ -1,11 +1,12 @@
 import type { PullRequestRef } from '@devbord/shared';
+import { t } from '../../i18n';
 
-/** Pull request state in words (Spanish UI). */
+/** Pull request state in words, in the current language. */
 export const prLabel = (pr: PullRequestRef) =>
   pr.state === 'merged'
-    ? 'fusionado'
+    ? t('github.merged')
     : pr.state === 'closed'
-      ? 'cerrado'
+      ? t('github.closed')
       : pr.draft
-        ? 'borrador'
-        : 'abierto';
+        ? t('github.prDraft')
+        : t('github.open');

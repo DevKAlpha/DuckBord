@@ -5,6 +5,8 @@
  */
 
 /** Who a link belongs to. Drives the chip color; "web" is anything else. */
+import { t } from '../i18n';
+
 export type LinkProvider = 'google' | 'microsoft' | 'slack' | 'github' | 'web';
 
 export interface LinkInfo {
@@ -42,7 +44,7 @@ export function describeLink(raw: string): LinkInfo {
   try {
     url = new URL(raw);
   } catch {
-    return { provider: 'web', service: 'Enlace' };
+    return { provider: 'web', service: t('links.generic') };
   }
   const host = url.hostname.replace(/^www\./, '');
 

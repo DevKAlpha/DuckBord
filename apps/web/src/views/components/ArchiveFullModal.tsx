@@ -8,8 +8,7 @@ import { Button, IconButton, Modal, confirm } from '../../design';
 import { archivedBoards, useBoardController } from '../../controllers/boardController';
 import { removeBoard } from '../../controllers/boardLifecycle';
 import { downloadBoardJson } from '../board/downloadBoard';
-
-const dateFormat = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' });
+import { dateFormat, useT } from '../../i18n';
 
 export function ArchiveFullModal({
   open,
@@ -26,13 +25,13 @@ export function ArchiveFullModal({
 }) {
   const boards = useBoardController((s) => s.boards);
   const archived = archivedBoards(boards);
+  const t = useT();
 
   return (
-    <Modal open={open} title="Archivados llenos" onClose={onClose}>
+    <Modal open={open} title={t('archiveFull.title')} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <p className="text-[15px] leading-snug">
-          Ya tienes {MAX_ARCHIVED_BOARDS} tableros archivados, el máximo. Elige uno para eliminarlo
-          y archivar "{boardName}". Puedes descargarlo antes en JSON.
+          {t('archiveFull.body', { max: MAX_ARCHIVED_BOARDS, name: boardName })}
         </p>
         <ul className="flex flex-col gap-1.5">
           {archived.map((b) => (
@@ -42,20 +41,22 @@ export function ArchiveFullModal({
             >
               <span className="min-w-0 flex-1 truncate font-semibold">{b.name}</span>
               <span className="shrink-0 text-xs text-faint">
-                {dateFormat.format(new Date(b.archivedAt ?? b.updatedAt))}
+                {dateFormat({ day: 'numeric', month: 'short' }).format(
+                  new Date(b.archivedAt ?? b.updatedAt),
+                )}
               </span>
               <IconButton
                 icon="download"
-                label={`Descargar "${b.name}" en JSON`}
+                label={t('common.downloadJson', { name: b.name })}
                 onClick={() => downloadBoardJson(b)}
               />
               <IconButton
                 icon="trash"
-                label={`Eliminar "${b.name}"`}
+                label={t('common.deleteNamed', { name: b.name })}
                 onClick={async () => {
                   const ok = await confirm(
-                    `¿Eliminar el tablero archivado "${b.name}" y archivar "${boardName}"? No se puede deshacer.`,
-                    { confirmLabel: 'Eliminar y archivar', danger: true },
+                    t('archiveFull.confirm', { archived: b.name, name: boardName }),
+                    { confirmLabel: t('archiveFull.confirmLabel'), danger: true },
                   );
                   if (!ok) return;
                   await removeBoard(b);
@@ -66,7 +67,7 @@ export function ArchiveFullModal({
           ))}
         </ul>
         <footer className="flex justify-end">
-          <Button onClick={onClose}>Cancelar</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
         </footer>
       </div>
     </Modal>

@@ -7,8 +7,9 @@ import { usePreferences } from '../../controllers/preferencesController';
 import { buildBoardFromTemplate, getTemplate, templatesFor } from '../../templates';
 import { Logo } from '../components/Logo';
 import { ModePicker, ProfilePicker, SkinPicker, TemplatePicker } from '../components/Pickers';
+import { useT } from '../../i18n';
 
-const STEPS = ['Perfil', 'Plantilla', 'Tipo y nombre'] as const;
+const STEPS = ['onboarding.stepProfile', 'onboarding.stepTemplate', 'onboarding.stepName'] as const;
 
 /**
  * First-run flow: 3 short steps, every one with a sensible default, and a
@@ -18,6 +19,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const addBoard = useBoardController((s) => s.addBoard);
   const completeOnboarding = usePreferences((s) => s.completeOnboarding);
+  const t = useT();
 
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<Profile>('simple');
@@ -54,17 +56,17 @@ export function OnboardingPage() {
   return (
     <div className="flex min-h-full flex-col">
       <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-5">
-        <Link to="/" aria-label="DuckBord, ir al inicio">
+        <Link to="/" aria-label={t('shell.home')}>
           <Logo />
         </Link>
         <Button variant="ghost" size="sm" onClick={skip}>
-          Saltar
+          {t('onboarding.skip')}
         </Button>
       </header>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pb-10">
         {/* Pixel progress: one block per step. */}
-        <ol className="flex gap-2" aria-label="Progreso">
+        <ol className="flex gap-2" aria-label={t('onboarding.progress')}>
           {STEPS.map((label, i) => (
             <li key={label} className="flex flex-1 flex-col gap-1.5">
               <span
@@ -77,7 +79,7 @@ export function OnboardingPage() {
                 className={i === step ? 'text-xs font-semibold' : 'text-xs text-muted'}
                 aria-current={i === step ? 'step' : undefined}
               >
-                {label}
+                {t(label)}
               </span>
             </li>
           ))}
@@ -87,10 +89,8 @@ export function OnboardingPage() {
           {step === 0 && (
             <>
               <div>
-                <h1 className="text-3xl sm:text-4xl">Hola. Organicemos algo.</h1>
-                <p className="mt-2 text-muted">
-                  ¿Cómo prefieres trabajar? Puedes cambiarlo cuando quieras en cada tablero.
-                </p>
+                <h1 className="text-3xl sm:text-4xl">{t('onboarding.hello')}</h1>
+                <p className="mt-2 text-muted">{t('onboarding.helloBody')}</p>
               </div>
               <ProfilePicker value={profile} onChange={changeProfile} />
             </>
@@ -99,10 +99,8 @@ export function OnboardingPage() {
           {step === 1 && (
             <>
               <div>
-                <h1 className="text-3xl">Elige un punto de partida</h1>
-                <p className="mt-2 text-muted">
-                  Incluye tarjetas de ejemplo para que aprendas jugando.
-                </p>
+                <h1 className="text-3xl">{t('onboarding.start')}</h1>
+                <p className="mt-2 text-muted">{t('onboarding.startBody')}</p>
               </div>
               <TemplatePicker
                 templates={templatesFor(profile)}
@@ -110,7 +108,7 @@ export function OnboardingPage() {
                 onChange={pickTemplate}
               />
               <h2 className="-mb-3 text-xs font-semibold tracking-wide text-muted uppercase">
-                Tema
+                {t('newBoard.skin')}
               </h2>
               <SkinPicker value={skin} onChange={setSkin} />
             </>
@@ -126,14 +124,11 @@ export function OnboardingPage() {
               }}
             >
               <div>
-                <h1 className="text-3xl">¿Para quién es?</h1>
-                <p className="mt-2 text-muted">
-                  Individual o de equipo. Se elige una vez, así nunca se mezcla tu trabajo con el
-                  del equipo.
-                </p>
+                <h1 className="text-3xl">{t('newBoard.forWhom')}</h1>
+                <p className="mt-2 text-muted">{t('onboarding.modeBody')}</p>
               </div>
               <ModePicker value={mode} onChange={setMode} />
-              <Field label="Nombre del tablero" htmlFor="onboarding-board-name">
+              <Field label={t('board.name')} htmlFor="onboarding-board-name">
                 <Input
                   id="onboarding-board-name"
                   autoFocus
@@ -149,15 +144,15 @@ export function OnboardingPage() {
 
         <footer className="mt-auto flex items-center justify-between gap-3 pt-4">
           <Button variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
-            Atrás
+            {t('onboarding.back')}
           </Button>
           {step < STEPS.length - 1 ? (
             <Button variant="primary" onClick={() => setStep((s) => s + 1)}>
-              Continuar
+              {t('onboarding.next')}
             </Button>
           ) : (
             <Button type="submit" form="onboarding-name" variant="primary">
-              Crear mi tablero
+              {t('onboarding.create')}
             </Button>
           )}
         </footer>

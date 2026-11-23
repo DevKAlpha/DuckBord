@@ -8,7 +8,8 @@
  * session and merge like the cards do.
  *
  * Document shape (two root types, next to the board's "board" map):
- *   sketch.strokes: Y.Array<Y.Map>   id, tool, color, size, points: Y.Array<number>
+ *   sketch.strokes: Y.Array<Y.Map>   id, tool, color, size, fill, dash, rough, seed,
+ *                                    icon, label, points: Y.Array<number>
  *   sketch.notes:   Y.Map<Note>      one plain object per sticky note (last writer wins)
  *
  * Points live in a Y.Array so a stroke can grow while it is drawn: teammates
@@ -19,10 +20,14 @@
  */
 import * as Y from 'yjs';
 import {
+  FILL_STYLES,
+  ICON_IDS,
   INK_COLORS,
+  LINE_STYLES,
   NOTE_COLORS,
   NOTE_TEXT_MAX,
   MAIN_SHEET,
+  ROUGHNESS,
   STROKE_TOOLS,
   type Note,
   type SketchSnapshot,
@@ -46,6 +51,19 @@ const isOneOf = <T extends string>(list: readonly T[], v: unknown): v is T =>
 const num = (v: unknown, fallback = 0) =>
   typeof v === 'number' && Number.isFinite(v) ? v : fallback;
 
+/**
+ * Seed for strokes drawn before seeds existed: derived from the id, so every
+ * screen draws the same hand-made wobble. Never 0 (rough.js reads 0 as random).
+ */
+export function seedOf(id: string) {
+  let h = 7;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return (Math.abs(h) % 2147483646) + 1;
+}
+
+/** Style fields a selection can change at once. */
+export type StrokeStyle = Partial<Pick<Stroke, 'color' | 'size' | 'fill' | 'dash' | 'rough'>>;
+
 /** Peers are trusted to run the same app, but a bad value must never crash the canvas. */
 function readStroke(map: Y.Map<unknown>): Stroke | null {
   const id = map.get('id');
@@ -53,13 +71,48 @@ function readStroke(map: Y.Map<unknown>): Stroke | null {
   if (typeof id !== 'string' || !(points instanceof Y.Array)) return null;
   const tool = map.get('tool');
   const color = map.get('color');
+  const fill = map.get('fill');
+  const dash = map.get('dash');
+  const rough = map.get('rough');
+  const icon = map.get('icon');
+  const label = map.get('label');
+  const text = map.get('text');
+  const seed = num(map.get('seed'));
   return {
     id,
     tool: isOneOf(STROKE_TOOLS, tool) ? tool : 'pen',
     color: isOneOf(INK_COLORS, color) ? color : 'ink',
     size: Math.min(64, Math.max(1, num(map.get('size'), 4))),
     points: (points.toArray() as unknown[]).map((p) => num(p)),
+    fill: isOneOf(FILL_STYLES, fill) ? fill : 'none',
+    dash: isOneOf(LINE_STYLES, dash) ? dash : 'solid',
+    // Strokes from before styles existed keep the light hand-drawn look.
+    rough: (ROUGHNESS as readonly unknown[]).includes(rough) ? (rough as Stroke['rough']) : 1,
+    seed: seed >= 1 ? Math.floor(seed) : seedOf(id),
+    ...(isOneOf(ICON_IDS, icon) ? { icon } : {}),
+    ...(typeof label === 'string' ? { label: label.slice(0, 4) } : {}),
+    ...(typeof text === 'string' && text ? { text: text.slice(0, NOTE_TEXT_MAX) } : {}),
   };
+}
+
+/** Writes every field of a stroke into a new shared map. */
+function strokeMap(stroke: Stroke): Y.Map<unknown> {
+  const map = new Y.Map<unknown>();
+  map.set('id', stroke.id);
+  map.set('tool', stroke.tool);
+  map.set('color', stroke.color);
+  map.set('size', stroke.size);
+  map.set('fill', stroke.fill);
+  map.set('dash', stroke.dash);
+  map.set('rough', stroke.rough);
+  map.set('seed', stroke.seed);
+  if (stroke.icon) map.set('icon', stroke.icon);
+  if (stroke.label !== undefined) map.set('label', stroke.label);
+  if (stroke.text) map.set('text', stroke.text);
+  const points = new Y.Array<number>();
+  points.push([...stroke.points]);
+  map.set('points', points);
+  return map;
 }
 
 function readNote(id: string, raw: unknown): Note | null {
@@ -72,6 +125,8 @@ function readNote(id: string, raw: unknown): Note | null {
     y: num(n.y),
     text: typeof n.text === 'string' ? n.text.slice(0, NOTE_TEXT_MAX) : '',
     color: isOneOf(NOTE_COLORS, n.color) ? n.color : 'yellow',
+    ink: isOneOf(INK_COLORS, n.ink) ? n.ink : 'ink',
+    fontStep: n.fontStep === 0 || n.fontStep === 2 ? n.fontStep : 1,
     z: num(n.z),
     author: typeof n.author === 'string' ? n.author : null,
     authorColor: typeof n.authorColor === 'string' ? n.authorColor : null,
@@ -167,14 +222,7 @@ export class SketchModel {
   beginStroke(stroke: Stroke) {
     this.undoManager.stopCapturing();
     this.doc.transact(() => {
-      const map = new Y.Map<unknown>();
-      map.set('id', stroke.id);
-      map.set('tool', stroke.tool);
-      map.set('color', stroke.color);
-      map.set('size', stroke.size);
-      const points = new Y.Array<number>();
-      points.push([...stroke.points]);
-      map.set('points', points);
+      const map = strokeMap(stroke);
       this.strokesArr.push([map]);
       this.drawing.set(stroke.id, map);
     }, ORIGIN);
@@ -210,6 +258,60 @@ export class SketchModel {
         if (ids.has(this.strokesArr.get(i).get('id') as string)) this.strokesArr.delete(i, 1);
       }
     }, ORIGIN);
+  }
+
+  /** Adds finished strokes (duplicate, paste): one undo step. */
+  addStrokes(strokes: readonly Stroke[]) {
+    if (strokes.length === 0) return;
+    this.undoManager.stopCapturing();
+    this.doc.transact(() => this.strokesArr.push(strokes.map(strokeMap)), ORIGIN);
+    this.undoManager.stopCapturing();
+  }
+
+  /** Replaces the points of several strokes at once (move, resize): one undo step. */
+  setStrokePoints(updates: ReadonlyMap<string, readonly number[]>) {
+    if (updates.size === 0) return;
+    this.undoManager.stopCapturing();
+    this.doc.transact(() => {
+      this.strokesArr.forEach((map) => {
+        const next = updates.get(map.get('id') as string);
+        const arr = map.get('points');
+        if (!next || !(arr instanceof Y.Array)) return;
+        arr.delete(0, arr.length);
+        arr.push([...next]);
+      });
+    }, ORIGIN);
+    this.undoManager.stopCapturing();
+  }
+
+  /** Changes color, width or style of several strokes at once: one undo step. */
+  /**
+   * Writes the text inside a shape. Called on every keystroke so teammates
+   * see it live; the editor calls stopCapturing() when it opens and closes,
+   * so the whole edit is one undo step.
+   */
+  setStrokeText(id: string, text: string) {
+    const next = text.slice(0, NOTE_TEXT_MAX);
+    this.doc.transact(() => {
+      this.strokesArr.forEach((map) => {
+        if (map.get('id') !== id || (map.get('text') ?? '') === next) return;
+        if (next) map.set('text', next);
+        else map.delete('text');
+      });
+    }, ORIGIN);
+  }
+
+  restyleStrokes(ids: ReadonlySet<string>, style: StrokeStyle) {
+    const entries = Object.entries(style).filter(([, v]) => v !== undefined);
+    if (ids.size === 0 || entries.length === 0) return;
+    this.undoManager.stopCapturing();
+    this.doc.transact(() => {
+      this.strokesArr.forEach((map) => {
+        if (!ids.has(map.get('id') as string)) return;
+        for (const [key, value] of entries) if (map.get(key) !== value) map.set(key, value);
+      });
+    }, ORIGIN);
+    this.undoManager.stopCapturing();
   }
 
   // --- notes -----------------------------------------------------------------

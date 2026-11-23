@@ -2,16 +2,16 @@
  * Whiteboard ("pizarra") styles. Plain CSS: sizes and positions come from JS
  * per frame, and the paper/grid look needs a few gradients.
  *
- * Light theme: squared school paper (blue grid, red margin line).
- * Dark theme: a green-black chalkboard with a faint chalk grid.
- * Ink colors are resolved here per theme, so the same drawing reads well in both.
+ * Story 24, the look of Excalidraw: clean paper with a faint dot grid, so the
+ * drawing is what stands out. Light theme: white paper. Dark theme: a soft
+ * graphite sheet. Ink colors are resolved here per theme, so the same drawing
+ * reads well in both. Text on the sheet uses a hand-written font.
  */
-/* Set on the whiteboard dialog, so the dock swatches and the canvas share the colors. */
+/* Set on the whiteboard dialog, so the panel swatches and the canvas share the colors. */
 .sk-root {
-  --sk-paper: #fdfdf9;
-  --sk-grid: rgb(86 140 210 / 0.22);
-  --sk-grid-strong: rgb(86 140 210 / 0.38);
-  --sk-margin: rgb(230 80 80 / 0.45);
+  --sk-paper: #fffffd;
+  --sk-dot: rgb(40 40 60 / 0.16);
+  --sk-hand: 'Shantell Sans', 'Gaegu', 'Comic Sans MS', cursive;
   --sk-ink: #1d1d1f;
   --sk-blue: var(--label-blue-ink);
   --sk-red: var(--label-red-ink);
@@ -20,11 +20,9 @@
   --sk-purple: var(--label-purple-ink);
 }
 [data-theme='dark'] .sk-root {
-  --sk-paper: #18221d;
-  --sk-grid: rgb(255 255 255 / 0.05);
-  --sk-grid-strong: rgb(255 255 255 / 0.1);
-  --sk-margin: rgb(255 120 120 / 0.25);
-  --sk-ink: #f1f1ea;
+  --sk-paper: #1b1b1f;
+  --sk-dot: rgb(255 255 255 / 0.1);
+  --sk-ink: #ececf1;
 }
 
 .sk-sheet {
@@ -32,41 +30,43 @@
   overflow: hidden;
   border-radius: 10px;
   background-color: var(--sk-paper);
-  /* One cell = 40 sheet units, every 5th line a bit stronger. */
-  background-image:
-    linear-gradient(var(--sk-grid-strong) 1px, transparent 1px),
-    linear-gradient(90deg, var(--sk-grid-strong) 1px, transparent 1px),
-    linear-gradient(var(--sk-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--sk-grid) 1px, transparent 1px);
-  background-size:
-    calc(var(--sk-cell) * 5) calc(var(--sk-cell) * 5),
-    calc(var(--sk-cell) * 5) calc(var(--sk-cell) * 5),
-    var(--sk-cell) var(--sk-cell),
-    var(--sk-cell) var(--sk-cell);
+  /* A dot every 40 sheet units: helps line things up without boxing them in. */
+  background-image: radial-gradient(circle, var(--sk-dot) 1.2px, transparent 1.6px);
+  background-size: var(--sk-cell) var(--sk-cell);
+  background-position: calc(var(--sk-cell) / 2) calc(var(--sk-cell) / 2);
   box-shadow:
     inset 0 0 0 1px var(--line-soft),
     0 1px 2px rgb(16 16 24 / 0.06);
   touch-action: none;
   user-select: none;
 }
-/* The notebook margin line. */
-.sk-sheet::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--sk-cell) * 2);
-  width: 2px;
-  background: var(--sk-margin);
-  pointer-events: none;
-}
-
 .sk-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  cursor: crosshair;
+}
+/* Drawing tools show their own preview instead of the pointer. */
+.sk-canvas[data-cursor='none'] {
   cursor: none;
+}
+.sk-canvas[data-cursor='default'] {
+  cursor: default;
+}
+.sk-canvas[data-cursor='grab'] {
+  cursor: move;
+}
+
+/* Shortcut letter in the corner of each dock button. */
+.sk-key {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-size: 8px;
+  line-height: 1;
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 /* Notes and peers live in sheet units; this layer is scaled to fit. */
@@ -106,6 +106,45 @@
   margin: -1px 0 0 -1px;
   background: var(--sk-color);
 }
+/* Shapes: a thin crosshair in the ink color. */
+.sk-brush[data-kind='cross']::before,
+.sk-brush[data-kind='cross']::after {
+  content: '';
+  position: absolute;
+  background: var(--sk-color);
+}
+.sk-brush[data-kind='cross']::before {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  margin-left: -0.75px;
+}
+.sk-brush[data-kind='cross']::after {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  margin-top: -0.75px;
+}
+/* Icons and steps: a see-through preview of what a click places. */
+.sk-brush[data-kind='icon'] {
+  color: var(--sk-color);
+}
+.sk-brush[data-kind='icon'][data-on],
+.sk-brush[data-kind='step'][data-on] {
+  opacity: 0.5;
+}
+.sk-brush[data-kind='step'] {
+  display: grid;
+  place-items: center;
+  background: var(--sk-color);
+  color: var(--sk-paper);
+  font-family: var(--sk-hand);
+  font-weight: 600;
+  line-height: 1;
+}
+
 .sk-brush[data-kind='eraser'] {
   border: 2px dashed var(--muted);
   background: rgb(255 255 255 / 0.25);
@@ -228,6 +267,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
+  font-family: var(--sk-hand);
   font-size: 26px;
   line-height: 1.3;
 }
@@ -241,7 +281,7 @@
   min-width: 160px;
   min-height: 0;
   background: transparent;
-  color: var(--sk-ink);
+  color: var(--text-color, var(--sk-ink));
   box-shadow: none;
 }
 .sk-note[data-kind='text'] .sk-paper::before {
@@ -261,12 +301,40 @@
 }
 .sk-note[data-kind='text'] textarea {
   min-height: 0;
-  font-size: 40px;
+  font-size: var(--text-size, 40px);
   padding: 0 8px 4px;
   field-sizing: content;
   min-width: 160px;
 }
 .sk-note[data-kind='text'] textarea::placeholder {
+  color: var(--faint);
+}
+
+/* Text written inside a shape (sheet units, in the scaled layer). */
+.sk-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+.sk-label textarea {
+  min-width: 3ch;
+  padding: 0;
+  border: 0;
+  outline: 1.5px dashed var(--faint);
+  outline-offset: 6px;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--sk-hand);
+  line-height: 1.25;
+  text-align: center;
+  field-sizing: content;
+}
+.sk-label textarea::placeholder {
   color: var(--faint);
 }
 
@@ -299,7 +367,9 @@ html[data-motion='lite'] .sk-brush[data-kind='text'] {
 /* Laser pointer: a red dot instead of the brush ring. */
 .sk-brush[data-kind='laser'] {
   background: #ff3b30;
-  box-shadow: 0 0 0 4px rgb(255 59 48 / 0.25);
+  box-shadow:
+    0 0 0 3px rgb(255 59 48 / 0.3),
+    0 0 0 7px rgb(255 59 48 / 0.12);
 }
 
 /* A teammate is typing in this note: their color around it and their name on top. */

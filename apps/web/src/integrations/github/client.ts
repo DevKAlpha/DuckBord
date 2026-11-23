@@ -8,6 +8,7 @@
  */
 import type { Board, GithubOp } from '@devbord/shared';
 import { popupSignIn, randomString } from '../accounts';
+import { t } from '../../i18n';
 
 const env = import.meta.env as Record<string, string | undefined>;
 
@@ -48,9 +49,9 @@ export class GithubApiError extends Error {
 }
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  if (!GITHUB_API) throw new GithubApiError(503, 'GitHub no está configurado en DuckBord.');
+  if (!GITHUB_API) throw new GithubApiError(503, t('github.notConfigured'));
   const session = githubSession();
-  if (!session) throw new GithubApiError(401, 'Conecta tu cuenta de GitHub.');
+  if (!session) throw new GithubApiError(401, t('github.connectAccount'));
   let res: Response;
   try {
     res = await fetch(`${GITHUB_API}/api/github${path}`, {
@@ -62,7 +63,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new GithubApiError(0, 'No hay conexión con el servidor de DuckBord.');
+    throw new GithubApiError(0, t('github.noConnection'));
   }
   if (res.status === 401) setSession(null);
   if (!res.ok) {
@@ -83,14 +84,14 @@ export interface GithubProjectSummary {
 export const githubApi = {
   /** Signs in through the GitHub App (popup) and keeps the session id. */
   async signIn() {
-    if (!GITHUB_API) throw new GithubApiError(503, 'GitHub no está configurado en DuckBord.');
+    if (!GITHUB_API) throw new GithubApiError(503, t('github.notConfigured'));
     const state = randomString(16);
     const params = await popupSignIn(
       `${GITHUB_API}/api/github/login?state=${encodeURIComponent(state)}`,
       state,
     );
     const session = params.get('devbord_session');
-    if (!session) throw new GithubApiError(401, 'GitHub no devolvió la sesión.');
+    if (!session) throw new GithubApiError(401, t('github.noSession'));
     setSession(session);
   },
   async signOut() {

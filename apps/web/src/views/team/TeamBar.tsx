@@ -3,12 +3,13 @@ import type { Board } from '@devbord/shared';
 import { Button, Input, PixelIcon, cx } from '../../design';
 import { inviteLink, useCollab } from '../../controllers/collabController';
 import { useIdentity } from '../../controllers/identityController';
+import { useT } from '../../i18n';
 
 const STATUS_TEXT = {
-  idle: 'Sin conexión',
-  connecting: 'Conectando…',
-  online: 'En vivo',
-  alone: 'Solo tú ahora',
+  idle: 'team.offline',
+  connecting: 'common.connecting',
+  online: 'team.live',
+  alone: 'team.alone',
 } as const;
 
 /** Pixel avatar: the person's initial on their cursor color. */
@@ -34,6 +35,7 @@ export function TeamBar({ board }: { board: Board }) {
   const me = useIdentity();
   const [copied, setCopied] = useState(false);
   const [manual, setManual] = useState(false);
+  const t = useT();
   const others = Object.entries(peers);
 
   const copy = async () => {
@@ -65,14 +67,15 @@ export function TeamBar({ board }: { board: Board }) {
                   : 'var(--faint)',
           }}
         />
-        {STATUS_TEXT[status]}
+        {t(STATUS_TEXT[status])}
       </span>
 
-      <span
-        className="flex -space-x-1.5"
-        aria-label={`${others.length + 1} personas en el tablero`}
-      >
-        <Avatar name={me.name || 'Tú'} color={me.color} title={`${me.name || 'Tú'} (tú)`} />
+      <span className="flex -space-x-1.5" aria-label={t.n('team.people', others.length + 1)}>
+        <Avatar
+          name={me.name || t('team.you')}
+          color={me.color}
+          title={t('team.meTitle', { name: me.name || t('team.you') })}
+        />
         {others.map(([id, p]) => (
           <Avatar key={id} name={p.name} color={p.color} />
         ))}
@@ -80,13 +83,13 @@ export function TeamBar({ board }: { board: Board }) {
 
       <Button size="sm" onClick={() => void copy()}>
         <PixelIcon name="link" />
-        {copied ? '¡Enlace copiado!' : 'Invitar'}
+        {copied ? t('team.copied') : t('team.invite')}
       </Button>
       {manual && (
         <Input
           readOnly
           autoFocus
-          aria-label="Enlace de invitación"
+          aria-label={t('team.inviteLink')}
           className="h-8 w-56 text-xs"
           value={inviteLink(board)}
           onFocus={(e) => e.currentTarget.select()}

@@ -8,6 +8,10 @@ const pen = (id: string, points: number[] = [0, 0]): Stroke => ({
   color: 'ink',
   size: 4,
   points,
+  fill: 'none',
+  dash: 'solid',
+  rough: 1,
+  seed: 7,
 });
 
 const note = (id: string) => ({
@@ -17,6 +21,8 @@ const note = (id: string) => ({
   y: 20,
   text: '',
   color: 'yellow' as const,
+  ink: 'ink' as const,
+  fontStep: 1 as const,
   author: null,
   authorColor: null,
 });
@@ -116,6 +122,80 @@ describe('SketchModel', () => {
     a.undo();
     expect(a.getSnapshot().strokes.map((s) => s.id)).toEqual(['theirs']);
     expect(b.getSnapshot().strokes.map((s) => s.id)).toEqual(['theirs']);
+  });
+
+  it('keeps the style and the hand-drawn seed of a stroke', () => {
+    const m = new SketchModel(new Y.Doc());
+    m.beginStroke({
+      ...pen('box', [0, 0, 100, 50]),
+      tool: 'rect',
+      fill: 'hachure',
+      dash: 'dashed',
+      rough: 2,
+      seed: 42,
+    });
+    expect(m.getSnapshot().strokes[0]).toMatchObject({
+      tool: 'rect',
+      fill: 'hachure',
+      dash: 'dashed',
+      rough: 2,
+      seed: 42,
+    });
+  });
+
+  it('gives strokes drawn before styles existed a stable seed and the default look', () => {
+    const doc = new Y.Doc();
+    const map = new Y.Map<unknown>();
+    map.set('id', 'old');
+    map.set('tool', 'rect');
+    const points = new Y.Array<number>();
+    points.push([0, 0, 10, 10]);
+    map.set('points', points);
+    doc.getArray<Y.Map<unknown>>('sketch.strokes').push([map]);
+    const a = new SketchModel(doc).getSnapshot().strokes[0]!;
+    const b = new SketchModel(doc).getSnapshot().strokes[0]!;
+    expect(a).toMatchObject({ fill: 'none', dash: 'solid', rough: 1 });
+    expect(a.seed).toBeGreaterThan(0);
+    expect(a.seed).toBe(b.seed);
+  });
+
+  it('moves, restyles and duplicates as single undo steps', () => {
+    const m = new SketchModel(new Y.Doc());
+    m.beginStroke(pen('a', [0, 0, 10, 10]));
+    m.endStroke('a');
+    m.setStrokePoints(new Map([['a', [5, 5, 15, 15]]]));
+    expect(m.getSnapshot().strokes[0]!.points).toEqual([5, 5, 15, 15]);
+    m.restyleStrokes(new Set(['a']), { color: 'red', fill: 'solid' });
+    expect(m.getSnapshot().strokes[0]).toMatchObject({ color: 'red', fill: 'solid' });
+    m.addStrokes([{ ...pen('b', [1, 1]), color: 'blue' }]);
+    expect(m.getSnapshot().strokes.map((s) => s.id)).toEqual(['a', 'b']);
+
+    m.undo();
+    expect(m.getSnapshot().strokes.map((s) => s.id)).toEqual(['a']);
+    m.undo();
+    expect(m.getSnapshot().strokes[0]!.color).toBe('ink');
+    m.undo();
+    expect(m.getSnapshot().strokes[0]!.points).toEqual([0, 0, 10, 10]);
+  });
+
+  it('writes text inside a shape as one undo step, live for teammates', () => {
+    const { a, b } = twoPeers();
+    a.beginStroke({ ...pen('box', [0, 0, 100, 60]), tool: 'rect' });
+    a.endStroke('box');
+    a.stopCapturing();
+    a.setStrokeText('box', 'A');
+    a.setStrokeText('box', 'AP');
+    a.setStrokeText('box', 'API');
+    a.stopCapturing();
+    expect(b.getSnapshot().strokes[0]!.text).toBe('API');
+    a.undo();
+    expect(a.getSnapshot().strokes[0]!.text).toBeUndefined();
+  });
+
+  it('keeps the color and size of free text', () => {
+    const m = new SketchModel(new Y.Doc());
+    m.addNote({ ...note('t'), kind: 'text', ink: 'purple', fontStep: 2 });
+    expect(m.getSnapshot().notes[0]).toMatchObject({ kind: 'text', ink: 'purple', fontStep: 2 });
   });
 
   it('ignores malformed data from the network', () => {

@@ -15,6 +15,7 @@ import { CARD_TYPE_META, PRIORITY_META } from './cardMeta';
 import { CardCalendar } from '../connections/CardCalendar';
 import { CardLinks } from '../connections/CardLinks';
 import { GithubCardPanel } from '../connections/GithubCardPanel';
+import { useT } from '../../i18n';
 
 export interface CardDetailModalProps {
   card: Card | null;
@@ -33,9 +34,10 @@ export interface CardDetailModalProps {
  * board does not re-render on every keystroke.
  */
 export function CardDetailModal({ card, ...rest }: CardDetailModalProps) {
+  const t = useT();
   // `key` resets the draft whenever a different card is opened.
   return (
-    <Modal open={card !== null} title="Detalle de la tarjeta" onClose={rest.onClose}>
+    <Modal open={card !== null} title={t('cardDetail.title')} onClose={rest.onClose}>
       {card && <CardForm key={card.id} card={card} {...rest} />}
     </Modal>
   );
@@ -51,10 +53,10 @@ function CardForm({
   onDelete,
   board,
 }: Omit<CardDetailModalProps, 'card'> & { card: Card }) {
+  const t = useT();
   const link = board?.github ?? null;
   /** On linked boards a field only exists if the Project has it. */
-  const missing = (has: boolean) =>
-    link && !has ? 'Añade este campo al Project en GitHub' : undefined;
+  const missing = (has: boolean) => (link && !has ? t('cardDetail.missingField') : undefined);
   const [draft, setDraft] = useState<CardPatch>({
     title: card.title,
     description: card.description,
@@ -82,11 +84,11 @@ function CardForm({
     >
       {columnTitle && (
         <p className="-mt-2 text-sm text-muted">
-          En <strong className="text-ink">{columnTitle}</strong>
+          {t('cardDetail.in')} <strong className="text-ink">{columnTitle}</strong>
         </p>
       )}
 
-      <Field label="Título" htmlFor="card-title">
+      <Field label={t('cardDetail.titleField')} htmlFor="card-title">
         <Input
           id="card-title"
           required
@@ -96,10 +98,10 @@ function CardForm({
         />
       </Field>
 
-      <Field label="Descripción" htmlFor="card-description">
+      <Field label={t('cardDetail.description')} htmlFor="card-description">
         <Textarea
           id="card-description"
-          placeholder="Añade más detalles…"
+          placeholder={t('cardDetail.descriptionPlaceholder')}
           className="min-h-52"
           value={draft.description ?? ''}
           onChange={(e) => set({ description: e.target.value })}
@@ -109,7 +111,7 @@ function CardForm({
       {labels.length > 0 && (
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
-            Etiquetas
+            {t('cardDetail.labels')}
           </legend>
           <div className="flex flex-wrap gap-2">
             {labels.map((l) => {
@@ -137,7 +139,7 @@ function CardForm({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Fecha límite" htmlFor="card-due">
+        <Field label={t('cardDetail.due')} htmlFor="card-due">
           <Input
             id="card-due"
             type="date"
@@ -148,22 +150,22 @@ function CardForm({
           />
         </Field>
         {features.cardTypes && (
-          <Field label="Tipo" htmlFor="card-type">
+          <Field label={t('cardDetail.type')} htmlFor="card-type">
             <Select
               id="card-type"
               value={draft.type}
               onChange={(e) => set({ type: CardTypeSchema.parse(e.target.value) })}
             >
-              {CardTypeSchema.options.map((t) => (
-                <option key={t} value={t}>
-                  {CARD_TYPE_META[t].label}
+              {CardTypeSchema.options.map((type) => (
+                <option key={type} value={type}>
+                  {t(CARD_TYPE_META[type].label)}
                 </option>
               ))}
             </Select>
           </Field>
         )}
         {features.priority && (
-          <Field label="Prioridad" htmlFor="card-priority">
+          <Field label={t('cardDetail.priority')} htmlFor="card-priority">
             <Select
               id="card-priority"
               disabled={Boolean(missing(link?.fields.priority ?? true))}
@@ -173,17 +175,17 @@ function CardForm({
                 set({ priority: e.target.value ? PrioritySchema.parse(e.target.value) : null })
               }
             >
-              <option value="">Sin prioridad</option>
+              <option value="">{t('cardDetail.noPriority')}</option>
               {PrioritySchema.options.map((p) => (
                 <option key={p} value={p}>
-                  {PRIORITY_META[p].label}
+                  {t(PRIORITY_META[p].label)}
                 </option>
               ))}
             </Select>
           </Field>
         )}
         {features.agile && (
-          <Field label="Sprint" htmlFor="card-sprint">
+          <Field label={t('cardDetail.sprint')} htmlFor="card-sprint">
             {link ? (
               // GitHub: the Project's iterations.
               <Select
@@ -193,7 +195,7 @@ function CardForm({
                 value={draft.sprint ?? ''}
                 onChange={(e) => set({ sprint: e.target.value || null })}
               >
-                <option value="">Sin sprint</option>
+                <option value="">{t('cardDetail.noSprint')}</option>
                 {draft.sprint && !link.iterations.some((i) => i.title === draft.sprint) && (
                   <option value={draft.sprint}>{draft.sprint}</option>
                 )}
@@ -207,7 +209,7 @@ function CardForm({
               <Input
                 id="card-sprint"
                 maxLength={30}
-                placeholder="Ej. Sprint 1"
+                placeholder={t('cardDetail.sprintPlaceholder')}
                 value={draft.sprint ?? ''}
                 onChange={(e) => set({ sprint: e.target.value.trim() ? e.target.value : null })}
               />
@@ -229,10 +231,10 @@ function CardForm({
                 })
               }
             >
-              <option value="">Sin estimar</option>
+              <option value="">{t('cardDetail.noPoints')}</option>
               {STORY_POINTS.map((p) => (
                 <option key={p} value={p}>
-                  {p === 13 ? '13 (divídela)' : p}
+                  {p === 13 ? t('cardDetail.split') : p}
                 </option>
               ))}
             </Select>
@@ -258,8 +260,8 @@ function CardForm({
           variant="ghost"
           className="text-danger hover:text-danger"
           onClick={() => {
-            void confirm('¿Eliminar esta tarjeta?', {
-              confirmLabel: 'Eliminar',
+            void confirm(t('cardDetail.deleteConfirm'), {
+              confirmLabel: t('common.delete'),
               danger: true,
             }).then((ok) => {
               if (!ok) return;
@@ -268,12 +270,12 @@ function CardForm({
             });
           }}
         >
-          Eliminar
+          {t('common.delete')}
         </Button>
         <div className="flex gap-2">
-          <Button onClick={onClose}>Cancelar</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button type="submit" variant="primary" disabled={!canSave}>
-            Guardar
+            {t('common.save')}
           </Button>
         </div>
       </footer>
