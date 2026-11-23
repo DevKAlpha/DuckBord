@@ -6,12 +6,15 @@ import './design/skins.css';
 import './design/pixel.css';
 import { initMotion, installSkinSprites } from './design';
 import { initLocale } from './i18n';
+import { logErrorsToDesktop } from './models/desktop';
 import { App } from './views/App';
 
 // Decide the animation level before the first render (see design/motion.ts).
 initMotion();
 // Pixel sprites of the seasonal skins, as CSS variables (see design/skinSprites.ts).
 installSkinSprites();
+// In the desktop app, uncaught errors go to its error log (story 27).
+logErrorsToDesktop();
 
 // The language is loaded before the first render: no flash of Spanish text.
 void initLocale().then(() =>

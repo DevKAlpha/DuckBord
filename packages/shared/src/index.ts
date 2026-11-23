@@ -3,3 +3,4 @@ export * from './schemas';
 export * from './github';
 export * from './profiles';
 export * from './board-ops';
+export type * from './desktop';
