@@ -30,6 +30,12 @@ export const es = {
   'shell.themeDark': 'Tema oscuro',
   'shell.home': 'DuckBord, ir al inicio',
   'shell.language': 'Idioma',
+  'shell.spellOn': 'Activar autocorrección',
+  'shell.spellOff': 'Desactivar autocorrección',
+  'spell.aria': 'Sugerencia de ortografía',
+  'spell.title': '«{word}» cambia de sentido con tilde:',
+  'spell.ignore': 'No volver a sugerir esta palabra',
+  'spell.close': 'Cerrar sugerencia',
 
   // --- pickers (onboarding and new board) -----------------------------------
   'pickers.profile': 'Perfil',

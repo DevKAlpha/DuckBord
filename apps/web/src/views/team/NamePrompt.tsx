@@ -40,6 +40,8 @@ export function NamePrompt() {
                 autoFocus
                 data-autofocus
                 maxLength={30}
+                // A name is written as the person likes it: no autocorrect.
+                spellCheck={false}
                 placeholder={t('name.placeholder')}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
