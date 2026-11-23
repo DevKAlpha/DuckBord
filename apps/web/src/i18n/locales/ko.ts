@@ -31,6 +31,12 @@ export const ko: Messages = {
   'shell.themeDark': '어두운 테마',
   'shell.home': 'DuckBord, 홈으로',
   'shell.language': '언어',
+  'shell.spellOn': '자동 고침 켜기',
+  'shell.spellOff': '자동 고침 끄기',
+  'spell.aria': '맞춤법 제안',
+  'spell.title': '“{word}”: 뜻에 맞는 표기를 고르세요',
+  'spell.ignore': '이 단어는 다시 제안하지 않기',
+  'spell.close': '제안 닫기',
 
   // --- pickers ------------------------------------------------------------------
   'pickers.profile': '프로필',
