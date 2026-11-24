@@ -17,7 +17,7 @@ Los instaladores están en **GitHub Releases** del repositorio (`DevKAlpha/DuckB
 - Windows muestra "Windows protegió su PC": _Más información_ > _Ejecutar de todas formas_.
 - macOS dice que no puede comprobar el desarrollador: _Ajustes del Sistema_ > _Privacidad y seguridad_ > _Abrir igualmente_.
 
-Para quitar esos avisos hace falta un certificado de firma de código (Windows) y una cuenta de Apple Developer (macOS). Se cargan como secretos de GitHub Actions (`CSC_LINK`, `CSC_KEY_PASSWORD`), y en `apps/desktop/electron-builder.yml` se quita la firma ad-hoc de macOS (`identity: '-'`).
+Para quitar esos avisos hace falta un certificado de firma de código (Windows) y una cuenta de Apple Developer (macOS). Se cargan como secretos de GitHub Actions (`CSC_LINK`, `CSC_KEY_PASSWORD`), y en `apps/desktop/electron-builder.ts` se quita la firma ad-hoc de macOS (`identity: '-'`).
 
 ## Dónde quedan los datos
 
@@ -43,8 +43,10 @@ Para pasar tableros desde la web: en la web, _Exportar_; en la app, _Importar JS
 
 ## Publicar una versión
 
-1. Subir la versión en `apps/desktop/package.json` (`version`).
-2. Crear y subir la etiqueta: `git tag v0.1.0 && git push origin v0.1.0`.
+1. En `apps/desktop/package.json`, cambiar las dos versiones:
+   - `displayVersion`: la versión pública (por ejemplo `0.2A`). Es la que llevan los instaladores, la Release y _Acerca de DuckBord_.
+   - `version`: la misma en números (`0.2.0`). npm y el instalador de Windows solo aceptan números.
+2. Crear y subir la etiqueta con la versión pública: `git tag v0.2A && git push origin v0.2A`.
 3. GitHub Actions (`.github/workflows/desktop.yml`) construye los instaladores en Windows, macOS y Linux y crea la Release con ellos.
 
 Cada push que toca `apps/desktop` también construye los tres instaladores como comprobación (quedan 14 días en la pestaña _Actions_).

@@ -15,7 +15,7 @@ export function LanguageMenu() {
       <span className="font-pixel uppercase">{locale}</span>
       <select
         aria-label={t('shell.language')}
-        className="absolute inset-0 cursor-pointer opacity-0"
+        className="lang-select absolute inset-0 cursor-pointer opacity-0"
         value={locale}
         onChange={(e) => void useLocale.getState().setLocale(e.target.value as Locale)}
       >
