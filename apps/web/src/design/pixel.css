@@ -76,8 +76,8 @@ html[data-motion='lite'] .pixel-drop {
   --pxb-dot: linear-gradient(var(--pxb-line), var(--pxb-line));
   border: var(--pxb) solid var(--pxb-line);
   border-radius: 0;
-  background-image: var(--pxb-dot), var(--pxb-dot), var(--pxb-dot), var(--pxb-dot),
-    var(--pxb-fill, none);
+  background-image:
+    var(--pxb-dot), var(--pxb-dot), var(--pxb-dot), var(--pxb-dot), var(--pxb-fill, none);
   background-position:
     left top,
     right top,
@@ -174,4 +174,44 @@ html[data-motion='lite'] .pixel-drop {
 .pixel-scroll-thumb:active {
   opacity: 1;
   background: var(--muted);
+}
+
+/*
+ * Language picker (LanguageMenu). The native list sized itself to the chip and
+ * could get a scrollbar with the pixel fonts. Chrome and Edge draw it in HTML
+ * instead (customizable select), wide and tall enough for every language name;
+ * other browsers keep their native list.
+ */
+@supports (appearance: base-select) {
+  .lang-select,
+  .lang-select::picker(select) {
+    appearance: base-select;
+  }
+  .lang-select::picker(select) {
+    min-width: 11rem;
+    max-block-size: none;
+    overflow: visible;
+    margin-block: 6px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: var(--shadow-lift-v);
+  }
+  .lang-select option {
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+  .lang-select option:hover,
+  .lang-select option:focus-visible {
+    background: var(--accent-soft);
+  }
+  .lang-select option:checked {
+    color: var(--accent);
+    font-weight: 600;
+  }
 }
