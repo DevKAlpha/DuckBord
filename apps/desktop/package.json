@@ -2,6 +2,7 @@
   "name": "@devbord/desktop",
   "productName": "DuckBord",
   "version": "0.1.0",
+  "displayVersion": "0.1A",
   "private": true,
   "description": "DuckBord para escritorio (Windows, macOS y Linux): la app web dentro de Electron, con los tableros guardados en SQLite en el equipo.",
   "author": "DevKAlpha",
