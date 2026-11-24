@@ -28,6 +28,8 @@ import {
   type MenuItemConstructorOptions,
 } from 'electron';
 import path from 'node:path';
+// Bundled by esbuild: the public version (0.1A), not the numeric one npm needs.
+import pkg from '../package.json';
 import { pathToFileURL } from 'node:url';
 import { createLog, describe, type Level } from './log';
 import { openStore, type Store } from './store';
@@ -136,7 +138,7 @@ function showAbout() {
     type: 'info',
     title: t.about,
     message: 'DuckBord',
-    detail: fill(t.aboutDetail, { version: app.getVersion(), data: dataDir }),
+    detail: fill(t.aboutDetail, { version: pkg.displayVersion, data: dataDir }),
     icon: path.join(__dirname, '..', 'resources', 'icon.png'),
   });
 }
@@ -308,9 +310,10 @@ function createWindow() {
       `${event.sourceId}:${event.lineNumber}`,
     );
   });
-  contents.on('did-fail-load', (_event, code, description, url) =>
-    log.write('error', 'load', `${description} (${code})`, url),
-  );
+  contents.on('did-fail-load', (_event, code, description, url) => {
+    // -3 (ERR_ABORTED): the load was replaced or the window closed, not a failure.
+    if (code !== -3) log.write('error', 'load', `${description} (${code})`, url);
+  });
   contents.on('preload-error', (_event, _path, err) =>
     log.write('error', 'preload', ...describe(err)),
   );
@@ -351,7 +354,7 @@ if (!app.requestSingleInstanceLock()) {
     log.write(
       'info',
       'app',
-      `DuckBord ${app.getVersion()} starting`,
+      `DuckBord ${pkg.displayVersion} starting`,
       `Electron ${process.versions.electron} · ${process.platform} ${process.arch}`,
     );
     try {
